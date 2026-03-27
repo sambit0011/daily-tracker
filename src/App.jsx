@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Activity, Utensils, Heart, LogOut, Menu, X, 
-  User as UserIcon, HelpCircle, Info, Mail, RotateCcw, Trash2, Calendar
+  User as UserIcon, HelpCircle, Info, Mail, RotateCcw, Trash2, Calendar, ClipboardList
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ActivityTracker from './components/ActivityTracker';
 import DietTracker from './components/DietTracker';
 import HealthTracker from './components/HealthTracker';
 import RoutineTracker from './components/RoutineTracker';
+import DietRoutine from './components/DietRoutine';
 import Auth from './components/Auth';
 
 const App = () => {
@@ -29,6 +30,9 @@ const App = () => {
         if (!parsed.routines) {
           parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
         }
+        if (!parsed.dietRoutines) {
+          parsed.dietRoutines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+        }
         return parsed;
       }
     }
@@ -41,19 +45,18 @@ const App = () => {
       mood: 'Good',
       activities: [],
       meals: [],
-      routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+      routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
+      dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
     };
   });
 
-  // Effect to load data when user changes (e.g. login/switch)
   useEffect(() => {
     if (user) {
       const savedData = localStorage.getItem(`health_data_${user.username}`);
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        if (!parsed.routines) {
-          parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
-        }
+        if (!parsed.routines) parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+        if (!parsed.dietRoutines) parsed.dietRoutines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
         setData(parsed);
       } else {
         setData({
@@ -65,7 +68,8 @@ const App = () => {
           mood: 'Good',
           activities: [],
           meals: [],
-          routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+          routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
+          dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
         });
       }
     }
@@ -99,7 +103,8 @@ const App = () => {
         mood: 'Good',
         activities: [],
         meals: [],
-        routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+        routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
+        dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
       });
       setIsMenuOpen(false);
     }
@@ -127,10 +132,12 @@ const App = () => {
         return <ActivityTracker data={data} setData={setData} />;
       case 'diet':
         return <DietTracker data={data} setData={setData} />;
-      case 'health':
-        return <HealthTracker data={data} setData={setData} />;
+      case 'dietPlan':
+        return <DietRoutine data={data} setData={setData} />;
       case 'routine':
         return <RoutineTracker data={data} setData={setData} />;
+      case 'health':
+        return <HealthTracker data={data} setData={setData} />;
       default:
         return <Dashboard data={data} />;
     }
@@ -211,13 +218,6 @@ const App = () => {
           <span>Overview</span>
         </div>
         <div 
-          className={`nav-item ${activeTab === 'activity' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('activity'); setIsMenuOpen(false); }}
-        >
-          <Activity />
-          <span>Activity</span>
-        </div>
-        <div 
           className={`nav-item ${activeTab === 'routine' ? 'active' : ''}`}
           onClick={() => { setActiveTab('routine'); setIsMenuOpen(false); }}
         >
@@ -225,11 +225,18 @@ const App = () => {
           <span>Routine</span>
         </div>
         <div 
+          className={`nav-item ${activeTab === 'dietPlan' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('dietPlan'); setIsMenuOpen(false); }}
+        >
+          <ClipboardList />
+          <span>Diet Chart</span>
+        </div>
+        <div 
           className={`nav-item ${activeTab === 'diet' ? 'active' : ''}`}
           onClick={() => { setActiveTab('diet'); setIsMenuOpen(false); }}
         >
           <Utensils />
-          <span>Diet</span>
+          <span>Log</span>
         </div>
         <div 
           className={`nav-item ${activeTab === 'health' ? 'active' : ''}`}
