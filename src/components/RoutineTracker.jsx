@@ -1,3 +1,4 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check } from 'lucide-react';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
