@@ -63,7 +63,7 @@ const DietRoutine = ({ data, setData }) => {
 
     setData(prev => ({
       ...prev,
-      dietRoutines: { ...dietRoutines, [selectedDay]: updatedDayDiet }
+      dietRoutines: { ...(prev.dietRoutines || {}), [selectedDay]: updatedDayDiet }
     }));
     setNewMeal('');
     setCurrentTime('08:00 AM');
@@ -87,7 +87,7 @@ const DietRoutine = ({ data, setData }) => {
     const updatedDayDiet = dietRoutines[selectedDay].filter(m => m.id !== id);
     setData(prev => ({
       ...prev,
-      dietRoutines: { ...dietRoutines, [selectedDay]: updatedDayDiet }
+      dietRoutines: { ...(prev.dietRoutines || {}), [selectedDay]: updatedDayDiet }
     }));
     if (editingId === id) cancelEdit();
   };
@@ -100,16 +100,13 @@ const DietRoutine = ({ data, setData }) => {
       return;
     }
 
-    setData(prev => {
-      const currentDietRoutines = prev.dietRoutines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
-      return {
-        ...prev,
-        dietRoutines: {
-          ...currentDietRoutines,
-          [selectedDay]: sortDiet([...sourceDiet.map(m => ({ ...m, id: Date.now() + Math.random() }))])
-        }
-      };
-    });
+    setData(prev => ({
+      ...prev,
+      dietRoutines: {
+        ...(prev.dietRoutines || {}),
+        [selectedDay]: sortDiet([...sourceDiet.map(m => ({ ...m, id: Date.now() + Math.random() }))])
+      }
+    }));
     setShowCopySelector(false);
   };
 

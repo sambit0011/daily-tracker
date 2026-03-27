@@ -48,7 +48,7 @@ const RoutineTracker = ({ data, setData }) => {
 
     setData(prev => ({
       ...prev,
-      routines: { ...routines, [selectedDay]: updatedDayRoutine }
+      routines: { ...(prev.routines || {}), [selectedDay]: updatedDayRoutine }
     }));
     setNewTask('');
     setCurrentTime('07:00 AM');
@@ -71,7 +71,7 @@ const RoutineTracker = ({ data, setData }) => {
     const updatedDayRoutine = routines[selectedDay].filter(a => a.id !== id);
     setData(prev => ({
       ...prev,
-      routines: { ...routines, [selectedDay]: updatedDayRoutine }
+      routines: { ...(prev.routines || {}), [selectedDay]: updatedDayRoutine }
     }));
     if (editingId === id) cancelEdit();
   };
@@ -84,16 +84,13 @@ const RoutineTracker = ({ data, setData }) => {
       return;
     }
 
-    setData(prev => {
-      const currentRoutines = prev.routines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
-      return {
-        ...prev,
-        routines: {
-          ...currentRoutines,
-          [selectedDay]: sortRoutine([...sourceRoutine.map(a => ({ ...a, id: Date.now() + Math.random() }))])
-        }
-      };
-    });
+    setData(prev => ({
+      ...prev,
+      routines: {
+        ...(prev.routines || {}),
+        [selectedDay]: sortRoutine([...sourceRoutine.map(a => ({ ...a, id: Date.now() + Math.random() }))])
+      }
+    }));
     setShowCopySelector(false);
   };
 
