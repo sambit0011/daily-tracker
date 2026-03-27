@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check } from 'lucide-react';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -12,12 +11,16 @@ const TimePickerModal = ({ isOpen, onClose, onSelect, initialTime }) => {
   const [p, setP] = useState('AM');
 
   useEffect(() => {
-    if (isOpen && initialTime) {
-      const [time, period] = initialTime.split(' ');
-      const [hour, min] = time.split(':');
-      setH(parseInt(hour));
-      setM(min);
-      setP(period);
+    if (isOpen && initialTime && initialTime.includes(' ') && initialTime.includes(':')) {
+      try {
+        const [time, period] = initialTime.split(' ');
+        const [hour, min] = time.split(':');
+        setH(parseInt(hour));
+        setM(min);
+        setP(period);
+      } catch (e) {
+        console.error("Failed to parse time:", initialTime);
+      }
     }
   }, [isOpen, initialTime]);
 
