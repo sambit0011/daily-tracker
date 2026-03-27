@@ -94,7 +94,7 @@ const RoutineTracker = ({ data, setData }) => {
     setShowCopySelector(false);
   };
 
-  const currentRoutine = routines[selectedDay] || [];
+  const currentRoutine = sortRoutine(routines[selectedDay] || []);
 
   return (
     <div className="routine-view animate-in">
@@ -105,7 +105,7 @@ const RoutineTracker = ({ data, setData }) => {
             Copy options <ChevronDown size={14} />
           </button>
           {showCopySelector && (
-            <div className="glass-card animate-in" style={{ position: 'absolute', top: '45px', right: 0, zIndex: 100, width: '200px', padding: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+            <div className="animate-in" style={{ position: 'absolute', top: '45px', right: 0, zIndex: 100, width: '200px', padding: '16px', background: '#1c1c1e', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Copy routine from:</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {days.filter(d => d !== selectedDay).map(day => (
