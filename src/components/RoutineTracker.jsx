@@ -3,13 +3,22 @@ import { Plus, Trash2, Copy, Clock, X, ChevronDown } from 'lucide-react';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 const periods = ['AM', 'PM'];
 
 const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
   const [h, setH] = useState(7);
   const [m, setM] = useState('00');
   const [p, setP] = useState('AM');
+
+  const hourRefs = useRef([]);
+  const minRefs = useRef([]);
+
+  useEffect(() => {
+    if (isOpen) {
+       // Reset to default on open
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -25,34 +34,49 @@ const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
           display: 'flex', 
           justifyContent: 'space-around', 
           background: 'rgba(255,255,255,0.03)', 
-          borderRadius: '20px',
-          padding: '20px 0',
-          position: 'relative'
+          borderRadius: '24px',
+          padding: '10px 0',
+          position: 'relative',
+          height: '200px',
+          overflow: 'hidden'
         }}>
-          {/* Highlight bar */}
+          {/* Highlight selection area */}
           <div style={{ 
             position: 'absolute', 
             top: '50%', 
             left: '10px', 
             right: '10px', 
-            height: '40px', 
-            background: 'rgba(59, 130, 246, 0.1)', 
+            height: '44px', 
+            background: 'rgba(59, 130, 246, 0.15)', 
             transform: 'translateY(-50%)',
-            borderRadius: '10px',
-            pointerEvents: 'none'
+            borderRadius: '12px',
+            pointerEvents: 'none',
+            border: '1px solid rgba(59, 130, 246, 0.3)'
           }}></div>
 
-          <div className="picker-column" style={{ height: '150px', overflowY: 'auto', textAlign: 'center', width: '30%' }}>
+          <div className="picker-column" style={{ 
+            height: '100%', 
+            overflowY: 'scroll', 
+            textAlign: 'center', 
+            width: '30%',
+            padding: '78px 0', /* Center items using padding */
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}>
             {hours.map(hour => (
               <div 
                 key={hour} 
                 onClick={() => setH(hour)}
                 style={{ 
-                  padding: '10px 0', 
-                  fontSize: h === hour ? '20px' : '16px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: h === hour ? '24px' : '18px',
                   fontWeight: h === hour ? '700' : '400',
-                  color: h === hour ? 'var(--accent-blue)' : 'var(--text-secondary)',
-                  cursor: 'pointer'
+                  color: h === hour ? 'var(--accent-blue)' : 'rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
               >
                 {hour}
@@ -60,17 +84,28 @@ const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
             ))}
           </div>
 
-          <div className="picker-column" style={{ height: '150px', overflowY: 'auto', textAlign: 'center', width: '30%' }}>
+          <div className="picker-column" style={{ 
+            height: '100%', 
+            overflowY: 'scroll', 
+            textAlign: 'center', 
+            width: '30%',
+            padding: '78px 0',
+            scrollbarWidth: 'none'
+          }}>
             {minutes.map(min => (
               <div 
                 key={min} 
                 onClick={() => setM(min)}
                 style={{ 
-                  padding: '10px 0', 
-                  fontSize: m === min ? '20px' : '16px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: m === min ? '24px' : '18px',
                   fontWeight: m === min ? '700' : '400',
-                  color: m === min ? 'var(--accent-blue)' : 'var(--text-secondary)',
-                  cursor: 'pointer'
+                  color: m === min ? 'var(--accent-blue)' : 'rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
               >
                 {min}
@@ -78,16 +113,26 @@ const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
             ))}
           </div>
 
-          <div className="picker-column" style={{ height: '150px', overflowY: 'auto', textAlign: 'center', width: '30%' }}>
+          <div className="picker-column" style={{ 
+            height: '100%', 
+            overflowY: 'scroll', 
+            textAlign: 'center', 
+            width: '30%',
+            padding: '78px 0',
+            scrollbarWidth: 'none'
+          }}>
             {periods.map(period => (
               <div 
                 key={period} 
                 onClick={() => setP(period)}
                 style={{ 
-                  padding: '10px 0', 
-                  fontSize: p === period ? '20px' : '16px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: p === period ? '22px' : '18px',
                   fontWeight: p === period ? '700' : '400',
-                  color: p === period ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                  color: p === period ? 'var(--accent-blue)' : 'rgba(255,255,255,0.3)',
                   cursor: 'pointer'
                 }}
               >
@@ -97,9 +142,13 @@ const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
           </div>
         </div>
 
+        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          Selected: <span style={{ color: 'var(--accent-blue)', fontWeight: '700' }}>{h}:{m} {p}</span>
+        </div>
+
         <button 
           onClick={() => onSelect(`${h}:${m} ${p}`)} 
-          style={{ width: '100%', marginTop: '24px' }}
+          style={{ width: '100%', marginTop: '16px' }}
         >
           Confirm Time
         </button>
