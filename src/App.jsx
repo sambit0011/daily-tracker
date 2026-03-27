@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Activity, Utensils, Heart, LogOut, Menu, X, 
-  User as UserIcon, HelpCircle, Info, Mail, RotateCcw, Trash2, ChevronRight 
+  User as UserIcon, HelpCircle, Info, Mail, RotateCcw, Trash2, Calendar
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ActivityTracker from './components/ActivityTracker';
 import DietTracker from './components/DietTracker';
 import HealthTracker from './components/HealthTracker';
+import RoutineTracker from './components/RoutineTracker';
 import Auth from './components/Auth';
 
 const App = () => {
@@ -27,13 +28,19 @@ const App = () => {
     mood: 'Good',
     activities: [],
     meals: [],
+    routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
   });
 
   useEffect(() => {
     if (user) {
       const savedData = localStorage.getItem(`health_data_${user.username}`);
       if (savedData) {
-        setData(JSON.parse(savedData));
+        const parsed = JSON.parse(savedData);
+        // Ensure routines exists in parsed data
+        if (!parsed.routines) {
+          parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+        }
+        setData(parsed);
       } else {
         setData({
           steps: 0,
@@ -44,6 +51,7 @@ const App = () => {
           mood: 'Good',
           activities: [],
           meals: [],
+          routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
         });
       }
     }
@@ -77,6 +85,7 @@ const App = () => {
         mood: 'Good',
         activities: [],
         meals: [],
+        routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
       });
       setIsMenuOpen(false);
     }
@@ -106,6 +115,8 @@ const App = () => {
         return <DietTracker data={data} setData={setData} />;
       case 'health':
         return <HealthTracker data={data} setData={setData} />;
+      case 'routine':
+        return <RoutineTracker data={data} setData={setData} />;
       default:
         return <Dashboard data={data} />;
     }
@@ -170,7 +181,7 @@ const App = () => {
           <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Tracking</span>
         </div>
         
-        <div style={{ width: '40px' }}></div> {/* Spacer for balance */}
+        <div style={{ width: '40px' }}></div>
       </header>
 
       <div className="container animate-in" style={{ paddingTop: '10px' }}>
@@ -191,6 +202,13 @@ const App = () => {
         >
           <Activity />
           <span>Activity</span>
+        </div>
+        <div 
+          className={`nav-item ${activeTab === 'routine' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('routine'); setIsMenuOpen(false); }}
+        >
+          <Calendar />
+          <span>Routine</span>
         </div>
         <div 
           className={`nav-item ${activeTab === 'diet' ? 'active' : ''}`}
