@@ -3,7 +3,7 @@ import { Plus, Trash2, Copy, Clock, X, ChevronDown } from 'lucide-react';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
 const periods = ['AM', 'PM'];
 
 const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
