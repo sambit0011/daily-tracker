@@ -17,7 +17,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialTime }) => {
         const [hour, min] = time.split(':');
         setH(parseInt(hour));
         setM(min);
-        setP(period);
+        setP(period === '{p}' ? 'AM' : period);
       } catch (e) {
         console.error("Failed to parse time:", initialTime);
       }
