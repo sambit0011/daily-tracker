@@ -19,24 +19,38 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  const [data, setData] = useState({
-    steps: 0,
-    calories: 0,
-    water: 0,
-    sleep: 0,
-    weight: 0,
-    mood: 'Good',
-    activities: [],
-    meals: [],
-    routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+  const [data, setData] = useState(() => {
+    const savedUser = localStorage.getItem('current_user');
+    if (savedUser) {
+      const u = JSON.parse(savedUser);
+      const savedData = localStorage.getItem(`health_data_${u.username}`);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (!parsed.routines) {
+          parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+        }
+        return parsed;
+      }
+    }
+    return {
+      steps: 0,
+      calories: 0,
+      water: 0,
+      sleep: 0,
+      weight: 0,
+      mood: 'Good',
+      activities: [],
+      meals: [],
+      routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+    };
   });
 
+  // Effect to load data when user changes (e.g. login/switch)
   useEffect(() => {
     if (user) {
       const savedData = localStorage.getItem(`health_data_${user.username}`);
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        // Ensure routines exists in parsed data
         if (!parsed.routines) {
           parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
         }
