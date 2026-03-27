@@ -78,13 +78,22 @@ const RoutineTracker = ({ data, setData }) => {
 
   const copyFromDay = (fromDay) => {
     const sourceRoutine = routines[fromDay];
-    setData(prev => ({
-      ...prev,
-      routines: {
-        ...routines,
-        [selectedDay]: sortRoutine([...sourceRoutine.map(a => ({ ...a, id: Math.random() }))])
-      }
-    }));
+    if (!sourceRoutine || sourceRoutine.length === 0) {
+      alert("Source day has no routine to copy!");
+      setShowCopySelector(false);
+      return;
+    }
+
+    setData(prev => {
+      const currentRoutines = prev.routines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+      return {
+        ...prev,
+        routines: {
+          ...currentRoutines,
+          [selectedDay]: sortRoutine([...sourceRoutine.map(a => ({ ...a, id: Date.now() + Math.random() }))])
+        }
+      };
+    });
     setShowCopySelector(false);
   };
 

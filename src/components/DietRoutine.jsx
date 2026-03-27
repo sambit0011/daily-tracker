@@ -94,13 +94,22 @@ const DietRoutine = ({ data, setData }) => {
 
   const copyFromDay = (fromDay) => {
     const sourceDiet = dietRoutines[fromDay];
-    setData(prev => ({
-      ...prev,
-      dietRoutines: {
-        ...dietRoutines,
-        [selectedDay]: sortDiet([...sourceDiet.map(m => ({ ...m, id: Math.random() }))])
-      }
-    }));
+    if (!sourceDiet || sourceDiet.length === 0) {
+      alert("Source day has no diet plan to copy!");
+      setShowCopySelector(false);
+      return;
+    }
+
+    setData(prev => {
+      const currentDietRoutines = prev.dietRoutines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+      return {
+        ...prev,
+        dietRoutines: {
+          ...currentDietRoutines,
+          [selectedDay]: sortDiet([...sourceDiet.map(m => ({ ...m, id: Date.now() + Math.random() }))])
+        }
+      };
+    });
     setShowCopySelector(false);
   };
 
