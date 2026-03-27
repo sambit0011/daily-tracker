@@ -86,7 +86,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialTime }) => {
           Selected: <span style={{ color: 'var(--accent-blue)', fontWeight: '700' }}>{h}:{m} {p}</span>
         </div>
 
-        <button onClick={() => onSelect(`${h}:${m} {p}`)} style={{ width: '100%', marginTop: '16px' }}>
+        <button onClick={() => onSelect(`${h}:${m} ${p}`)} style={{ width: '100%', marginTop: '16px' }}>
           Confirm Time
         </button>
       </div>
