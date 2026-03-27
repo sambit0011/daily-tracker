@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils } from 'lucide-react';
+import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils, Flame, Info } from 'lucide-react';
 import TimePicker from './TimePicker';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -13,6 +13,8 @@ const DietRoutine = ({ data, setData }) => {
   const [newMealType, setNewMealType] = useState('Breakfast');
   const [showCopySelector, setShowCopySelector] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedMealForIngredients, setSelectedMealForIngredients] = useState(null);
+  const [newIngredient, setNewIngredient] = useState({ name: '', protein: 0, carbs: 0, fat: 0 });
 
   const routines = data.routines || {};
   const dietRoutines = data.dietRoutines || {
@@ -110,7 +112,53 @@ const DietRoutine = ({ data, setData }) => {
     setShowCopySelector(false);
   };
 
+  const calculateMacros = (ingredients = []) => {
+    return ingredients.reduce((acc, ing) => {
+      const p = parseFloat(ing.protein) || 0;
+      const c = parseFloat(ing.carbs) || 0;
+      const f = parseFloat(ing.fat) || 0;
+      return {
+        protein: acc.protein + p,
+        carbs: acc.carbs + c,
+        fat: acc.fat + f,
+        calories: acc.calories + (p * 4) + (c * 4) + (f * 9)
+      };
+    }, { protein: 0, carbs: 0, fat: 0, calories: 0 });
+  };
+
+  const addIngredient = () => {
+    if (!newIngredient.name) return;
+    setData(prev => {
+      const currentDietRoutines = prev.dietRoutines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+      const updatedDayDiet = currentDietRoutines[selectedDay].map(m => {
+        if (m.id === selectedMealForIngredients.id) {
+          const ingredients = [...(m.ingredients || []), { ...newIngredient, id: Date.now() }];
+          return { ...m, ingredients };
+        }
+        return m;
+      });
+      return { ...prev, dietRoutines: { ...currentDietRoutines, [selectedDay]: updatedDayDiet } };
+    });
+    setNewIngredient({ name: '', protein: 0, carbs: 0, fat: 0 });
+  };
+
+  const deleteIngredient = (ingredientId) => {
+    setData(prev => {
+      const currentDietRoutines = prev.dietRoutines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+      const updatedDayDiet = currentDietRoutines[selectedDay].map(m => {
+        if (m.id === selectedMealForIngredients.id) {
+          const ingredients = (m.ingredients || []).filter(i => i.id !== ingredientId);
+          return { ...m, ingredients };
+        }
+        return m;
+      });
+      return { ...prev, dietRoutines: { ...currentDietRoutines, [selectedDay]: updatedDayDiet } };
+    });
+  };
+
   const currentDiet = sortDiet(dietRoutines[selectedDay] || []);
+  const activeMeal = selectedMealForIngredients ? currentDiet.find(m => m.id === selectedMealForIngredients.id) : null;
+  const mealMacros = activeMeal ? calculateMacros(activeMeal.ingredients) : { protein: 0, carbs: 0, fat: 0, calories: 0 };
 
   return (
     <div className="diet-routine-view animate-in">
@@ -190,29 +238,123 @@ const DietRoutine = ({ data, setData }) => {
           <div style={{ position: 'relative', paddingLeft: '20px' }}>
             <div style={{ position: 'absolute', left: '0', top: '10px', bottom: '10px', width: '1px', background: 'linear-gradient(to bottom, var(--accent-orange), transparent)' }}></div>
 
-            {currentDiet.map((item, i) => (
-              <div key={item.id} className="animate-in" style={{ marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px', animationDelay: `${i * 0.05}s` }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-orange)', marginTop: '8px', marginLeft: '-24px', boxShadow: '0 0 10px var(--accent-orange)' }}></div>
-                <div className="glass-card" style={{ flex: 1, marginBottom: 0, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: editingId === item.id ? '1px solid var(--accent-orange)' : '1px solid var(--card-border)' }}>
-                  <div onClick={() => startEdit(item)} style={{ cursor: 'pointer', flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--accent-orange)', background: 'rgba(255, 114, 94, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>{item.type}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{item.time}</span>
+            {currentDiet.map((item, i) => {
+              const macros = calculateMacros(item.ingredients);
+              return (
+                <div key={item.id} className="animate-in" style={{ marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px', animationDelay: `${i * 0.05}s` }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-orange)', marginTop: '8px', marginLeft: '-24px', boxShadow: '0 0 10px var(--accent-orange)' }}></div>
+                  <div className="glass-card" style={{ flex: 1, marginBottom: 0, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: editingId === item.id ? '1px solid var(--accent-orange)' : '1px solid var(--card-border)' }}>
+                    <div onClick={() => setSelectedMealForIngredients(item)} style={{ cursor: 'pointer', flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--accent-orange)', background: 'rgba(255, 114, 94, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>{item.type}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{item.time}</span>
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>{item.meal}</div>
+                      
+                      {macros.calories > 0 && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--accent-orange)', background: 'rgba(255, 114, 94, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                            <Flame size={10} /> {Math.round(macros.calories)} kcal
+                          </div>
+                          <div style={{ fontSize: '10px', opacity: 0.6 }}>P: {Math.round(macros.protein)}g | C: {Math.round(macros.carbs)}g | F: {Math.round(macros.fat)}g</div>
+                        </div>
+                      )}
+                      
+                      {(!item.ingredients || item.ingredients.length === 0) && (
+                        <div style={{ fontSize: '10px', opacity: 0.4, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Info size={10} /> Tap to add ingredients
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: '16px', fontWeight: '500' }}>{item.meal}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <Edit2 size={16} style={{ opacity: 0.4, cursor: 'pointer' }} onClick={() => startEdit(item)} />
-                    <Trash2 size={16} className="text-red-500" style={{ opacity: 0.4, cursor: 'pointer' }} onClick={() => deleteMeal(item.id)} />
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <Edit2 size={16} style={{ opacity: 0.4, cursor: 'pointer' }} onClick={() => startEdit(item)} />
+                      <Trash2 size={16} className="text-red-500" style={{ opacity: 0.4, cursor: 'pointer' }} onClick={() => deleteMeal(item.id)} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       <TimePicker isOpen={showTimePicker} onClose={() => setShowTimePicker(false)} onSelect={(time) => { setCurrentTime(time); setShowTimePicker(false); }} initialTime={currentTime} />
+
+      {selectedMealForIngredients && (
+        <div className="sidebar-backdrop" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div className="glass-card animate-in-up" style={{ width: '100%', maxWidth: '480px', height: '85vh', borderRadius: '32px 32px 0 0', padding: '24px', position: 'relative', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>{activeMeal?.meal}</h3>
+                <p style={{ margin: 0, fontSize: '12px', opacity: 0.6 }}>{activeMeal?.type} • {activeMeal?.time}</p>
+              </div>
+              <button onClick={() => setSelectedMealForIngredients(null)} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="glass-card" style={{ background: 'rgba(255, 114, 94, 0.1)', border: 'none', padding: '20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <div>
+                  <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }}>Total Calories</div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Flame size={24} style={{ color: 'var(--accent-orange)' }} /> {Math.round(mealMacros.calories)}
+                  </div>
+               </div>
+               <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.6 }}>P: {Math.round(mealMacros.protein)}g</div>
+                  <div style={{ fontSize: '12px', opacity: 0.6 }}>C: {Math.round(mealMacros.carbs)}g</div>
+                  <div style={{ fontSize: '12px', opacity: 0.6 }}>F: {Math.round(mealMacros.fat)}g</div>
+               </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <h4 style={{ marginBottom: '16px', fontSize: '14px' }}>Add Ingredient</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input type="text" placeholder="e.g. Oats, Egg, Protein Powder" value={newIngredient.name} onChange={(e) => setNewIngredient({...newIngredient, name: e.target.value})} />
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '12px' }}>P (g)</label>
+                    <input type="number" placeholder="P" value={newIngredient.protein} onChange={(e) => setNewIngredient({...newIngredient, protein: e.target.value})} style={{ padding: '8px 12px' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '12px' }}>C (g)</label>
+                    <input type="number" placeholder="C" value={newIngredient.carbs} onChange={(e) => setNewIngredient({...newIngredient, carbs: e.target.value})} style={{ padding: '8px 12px' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '12px' }}>F (g)</label>
+                    <input type="number" placeholder="F" value={newIngredient.fat} onChange={(e) => setNewIngredient({...newIngredient, fat: e.target.value})} style={{ padding: '8px 12px' }} />
+                  </div>
+                  <button onClick={addIngredient} style={{ flex: 1.5, background: 'var(--accent-orange)', padding: '0', alignSelf: 'flex-end', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Plus size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ marginBottom: '16px', fontSize: '14px' }}>Ingredients ({activeMeal?.ingredients?.length || 0})</h4>
+              {(activeMeal?.ingredients || []).length === 0 ? (
+                <div style={{ textAlign: 'center', opacity: 0.3, padding: '40px 0' }}>
+                  <Utensils size={32} style={{ margin: '0 auto 8px auto' }} />
+                  <p fontSize="12px">No ingredients added yet</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {activeMeal.ingredients.map(ing => (
+                    <div key={ing.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>{ing.name}</div>
+                        <div style={{ fontSize: '10px', opacity: 0.5 }}>P: {ing.protein}g | C: {ing.carbs}g | F: {ing.fat}g • {Math.round(parseFloat(ing.protein)*4 + parseFloat(ing.carbs)*4 + parseFloat(ing.fat)*9)} kcal</div>
+                      </div>
+                      <Trash2 size={14} style={{ opacity: 0.4, cursor: 'pointer' }} onClick={() => deleteIngredient(ing.id)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
