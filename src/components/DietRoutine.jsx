@@ -3,7 +3,7 @@ import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils } fro
 import TimePicker from './TimePicker';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const mealTypes = ['Breakfast', 'Morning Snack', 'Lunch', 'Afternoon Snack', 'Dinner', 'Late Night'];
+const mealTypes = ['Preworkout', 'Breakfast', 'Lunch', 'Snacks', 'Dinner'];
 
 const DietRoutine = ({ data, setData }) => {
   const [selectedDay, setSelectedDay] = useState(days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
@@ -14,9 +14,22 @@ const DietRoutine = ({ data, setData }) => {
   const [showCopySelector, setShowCopySelector] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  const routines = data.routines || {};
   const dietRoutines = data.dietRoutines || {
     Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: []
   };
+
+  // Automatically fetch time from routine when meal type changes
+  useEffect(() => {
+    if (!editingId && routines[selectedDay]) {
+      const matchingActivity = routines[selectedDay].find(a => 
+        a.task.toLowerCase().includes(newMealType.toLowerCase())
+      );
+      if (matchingActivity) {
+        setCurrentTime(matchingActivity.time);
+      }
+    }
+  }, [newMealType, selectedDay, routines, editingId]);
 
   const sortDiet = (diet) => {
     return [...diet].sort((a, b) => {
