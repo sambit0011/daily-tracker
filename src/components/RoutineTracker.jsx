@@ -1,35 +1,145 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Copy, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Trash2, Copy, Clock, X, ChevronDown } from 'lucide-react';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+const periods = ['AM', 'PM'];
+
+const TimePickerModal = ({ isOpen, onClose, onSelect }) => {
+  const [h, setH] = useState(7);
+  const [m, setM] = useState('00');
+  const [p, setP] = useState('AM');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="sidebar-backdrop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="glass-card animate-in" style={{ width: '90%', maxWidth: '320px', padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h3 style={{ margin: 0 }}>Select Time</h3>
+          <X onClick={onClose} style={{ cursor: 'pointer', opacity: 0.6 }} />
+        </div>
+
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-around', 
+          background: 'rgba(255,255,255,0.03)', 
+          borderRadius: '20px',
+          padding: '20px 0',
+          position: 'relative'
+        }}>
+          {/* Highlight bar */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '50%', 
+            left: '10px', 
+            right: '10px', 
+            height: '40px', 
+            background: 'rgba(59, 130, 246, 0.1)', 
+            transform: 'translateY(-50%)',
+            borderRadius: '10px',
+            pointerEvents: 'none'
+          }}></div>
+
+          <div className="picker-column" style={{ height: '150px', overflowY: 'auto', textAlign: 'center', width: '30%' }}>
+            {hours.map(hour => (
+              <div 
+                key={hour} 
+                onClick={() => setH(hour)}
+                style={{ 
+                  padding: '10px 0', 
+                  fontSize: h === hour ? '20px' : '16px',
+                  fontWeight: h === hour ? '700' : '400',
+                  color: h === hour ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                {hour}
+              </div>
+            ))}
+          </div>
+
+          <div className="picker-column" style={{ height: '150px', overflowY: 'auto', textAlign: 'center', width: '30%' }}>
+            {minutes.map(min => (
+              <div 
+                key={min} 
+                onClick={() => setM(min)}
+                style={{ 
+                  padding: '10px 0', 
+                  fontSize: m === min ? '20px' : '16px',
+                  fontWeight: m === min ? '700' : '400',
+                  color: m === min ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                {min}
+              </div>
+            ))}
+          </div>
+
+          <div className="picker-column" style={{ height: '150px', overflowY: 'auto', textAlign: 'center', width: '30%' }}>
+            {periods.map(period => (
+              <div 
+                key={period} 
+                onClick={() => setP(period)}
+                style={{ 
+                  padding: '10px 0', 
+                  fontSize: p === period ? '20px' : '16px',
+                  fontWeight: p === period ? '700' : '400',
+                  color: p === period ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                {period}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button 
+          onClick={() => onSelect(`${h}:${m} ${p}`)} 
+          style={{ width: '100%', marginTop: '24px' }}
+        >
+          Confirm Time
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const RoutineTracker = ({ data, setData }) => {
   const [selectedDay, setSelectedDay] = useState(days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
-  const [newTime, setNewTime] = useState('');
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [currentTime, setCurrentTime] = useState('07:00 AM');
   const [newTask, setNewTask] = useState('');
-  const [showCopyMenu, setShowCopyMenu] = useState(false);
+  const [showCopySelector, setShowCopySelector] = useState(false);
 
-  // Initialize routines if not exists
   const routines = data.routines || {
     Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: []
   };
 
   const addActivity = (e) => {
-    e.preventDefault();
-    if (!newTime || !newTask) return;
+    if (e) e.preventDefault();
+    if (!newTask) return;
 
-    const newActivity = { time: newTime, task: newTask, id: Date.now() };
-    const updatedDayRoutine = [...(routines[selectedDay] || []), newActivity].sort((a, b) => a.time.localeCompare(b.time));
+    const newActivity = { time: currentTime, task: newTask, id: Date.now() };
+    const updatedDayRoutine = [...(routines[selectedDay] || []), newActivity].sort((a, b) => {
+        // Simple string sort for AM/PM times
+        const timeToMinutes = (t) => {
+            const [time, period] = t.split(' ');
+            let [h, m] = time.split(':').map(Number);
+            if (period === 'PM' && h !== 12) h += 12;
+            if (period === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+        };
+        return timeToMinutes(a.time) - timeToMinutes(b.time);
+    });
     
     setData(prev => ({
       ...prev,
-      routines: {
-        ...routines,
-        [selectedDay]: updatedDayRoutine
-      }
+      routines: { ...routines, [selectedDay]: updatedDayRoutine }
     }));
-
-    setNewTime('');
     setNewTask('');
   };
 
@@ -37,34 +147,70 @@ const RoutineTracker = ({ data, setData }) => {
     const updatedDayRoutine = routines[selectedDay].filter(a => a.id !== id);
     setData(prev => ({
       ...prev,
-      routines: {
-        ...routines,
-        [selectedDay]: updatedDayRoutine
-      }
+      routines: { ...routines, [selectedDay]: updatedDayRoutine }
     }));
   };
 
-  const copyToDays = (targetDays) => {
-    const sourceRoutine = routines[selectedDay];
-    const newRoutines = { ...routines };
-    
-    targetDays.forEach(day => {
-      newRoutines[day] = [...sourceRoutine.map(a => ({ ...a, id: Math.random() }))];
-    });
-
+  const copyFromDay = (fromDay) => {
+    const sourceRoutine = routines[fromDay];
     setData(prev => ({
       ...prev,
-      routines: newRoutines
+      routines: {
+        ...routines,
+        [selectedDay]: [...sourceRoutine.map(a => ({ ...a, id: Math.random() }))]
+      }
     }));
-    setShowCopyMenu(false);
+    setShowCopySelector(false);
   };
 
   const currentRoutine = routines[selectedDay] || [];
 
   return (
     <div className="routine-view animate-in">
-      <h1>Weekly Routine</h1>
-      <p className="subtitle">Plan your perfect day, everyday</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <h1>Routine</h1>
+        <div style={{ position: 'relative' }}>
+            <button 
+                onClick={() => setShowCopySelector(!showCopySelector)}
+                style={{ 
+                    background: 'rgba(255,255,255,0.05)', 
+                    padding: '8px 12px', 
+                    fontSize: '12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px',
+                    borderRadius: '12px'
+                }}
+            >
+                Copy options <ChevronDown size={14} />
+            </button>
+            {showCopySelector && (
+                <div className="glass-card animate-in" style={{ 
+                    position: 'absolute', 
+                    top: '45px', 
+                    right: 0, 
+                    zIndex: 100, 
+                    width: '200px',
+                    padding: '12px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Copy routine from:</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {days.filter(d => d !== selectedDay).map(day => (
+                            <button 
+                                key={day} 
+                                onClick={() => copyFromDay(day)}
+                                style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 8px', fontSize: '11px', flex: '1 0 30%' }}
+                            >
+                                {day}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+      </div>
+      <p className="subtitle">Design your weekly flow</p>
 
       {/* Day Selector */}
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '8px' }}>
@@ -85,100 +231,107 @@ const RoutineTracker = ({ data, setData }) => {
         ))}
       </div>
 
-      {/* Add Activity Form */}
-      <div className="glass-card">
-        <h3 style={{ marginBottom: '16px', fontSize: '16px' }}>Add to {selectedDay}'s Schedule</h3>
-        <form onSubmit={addActivity} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <input 
-              type="time" 
-              value={newTime} 
-              onChange={(e) => setNewTime(e.target.value)}
-              style={{ flex: 1 }}
-              required
-            />
+      {/* Modern Add Activity UI */}
+      <div className="glass-card" style={{ padding: '24px' }}>
+        <h3 style={{ marginBottom: '20px', fontSize: '16px' }}>What's next for {selectedDay}?</h3>
+        
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+          <div 
+            onClick={() => setShowTimePicker(true)}
+            style={{ 
+              flex: 1, 
+              background: 'rgba(255,255,255,0.05)', 
+              borderRadius: '16px', 
+              padding: '12px', 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center',
+              cursor: 'pointer',
+              border: '1px solid var(--card-border)'
+            }}
+          >
+            <Clock size={16} style={{ color: 'var(--accent-blue)', marginBottom: '4px' }} />
+            <span style={{ fontSize: '16px', fontWeight: '700' }}>{currentTime}</span>
+          </div>
+
+          <div style={{ flex: 2 }}>
             <input 
               type="text" 
-              placeholder="What will you do?" 
+              placeholder="Activity name..." 
               value={newTask} 
               onChange={(e) => setNewTask(e.target.value)}
-              style={{ flex: 2 }}
-              required
+              style={{ padding: '15px' }}
             />
           </div>
-          <button type="submit" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <Plus size={18} /> Add Activity
-          </button>
-        </form>
+        </div>
+
+        <button 
+          onClick={addActivity} 
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px' }}
+        >
+          <Plus size={20} /> Add to Schedule
+        </button>
       </div>
 
-      {/* Daily List */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '18px' }}>{selectedDay}'s Timetable</h3>
-        {currentRoutine.length > 0 && (
-          <button 
-            onClick={() => setShowCopyMenu(!showCopyMenu)}
-            style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Copy size={14} /> Copy to...
-          </button>
+      {/* Timetable List */}
+      <div style={{ marginTop: '24px' }}>
+        {currentRoutine.length === 0 ? (
+          <div className="glass-card" style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.5 }}>
+            <Clock size={48} style={{ margin: '0 auto 16px auto', opacity: 0.2 }} />
+            <p>Your {selectedDay} is currently empty.</p>
+          </div>
+        ) : (
+          <div style={{ position: 'relative', paddingLeft: '20px' }}>
+            {/* Timeline divider */}
+            <div style={{ 
+                position: 'absolute', 
+                left: '0', 
+                top: '10px', 
+                bottom: '10px', 
+                width: '1px', 
+                background: 'linear-gradient(to bottom, var(--accent-blue), transparent)' 
+            }}></div>
+
+            {currentRoutine.map((item, i) => (
+              <div key={item.id} className="animate-in" style={{ 
+                marginBottom: '16px', 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                gap: '12px',
+                animationDelay: `${i * 0.05}s`
+              }}>
+                <div style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    background: 'var(--accent-blue)', 
+                    marginTop: '8px',
+                    marginLeft: '-24px',
+                    boxShadow: '0 0 10px var(--accent-blue)'
+                }}></div>
+                <div className="glass-card" style={{ flex: 1, marginBottom: 0, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent-blue)', marginBottom: '4px' }}>{item.time}</div>
+                    <div style={{ fontSize: '16px', fontWeight: '500' }}>{item.task}</div>
+                  </div>
+                  <Trash2 
+                    size={16} 
+                    className="text-red-500" 
+                    style={{ opacity: 0.4, cursor: 'pointer' }} 
+                    onClick={() => deleteActivity(item.id)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      {showCopyMenu && (
-        <div className="glass-card animate-in" style={{ borderColor: 'var(--accent-blue)', marginBottom: '16px' }}>
-          <div style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-secondary)' }}>Copy this routine to:</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {days.filter(d => d !== selectedDay).map(day => (
-              <button 
-                key={day}
-                onClick={() => copyToDays([day])}
-                style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)', padding: '6px 12px', fontSize: '12px' }}
-              >
-                {day}
-              </button>
-            ))}
-            <button 
-              onClick={() => copyToDays(days.filter(d => d !== selectedDay))}
-              style={{ width: '100%', marginTop: '8px', background: 'var(--accent-blue)', fontSize: '12px' }}
-            >
-              Copy to all other days
-            </button>
-          </div>
-        </div>
-      )}
-
-      {currentRoutine.length === 0 ? (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
-          No activities scheduled for {selectedDay}.
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {currentRoutine.map((item) => (
-            <div key={item.id} className="glass-card" style={{ marginBottom: 0, padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ 
-                color: 'var(--accent-blue)', 
-                fontWeight: '700', 
-                fontSize: '14px', 
-                minWidth: '65px',
-                padding: '4px 8px',
-                background: 'rgba(59, 130, 246, 0.1)',
-                borderRadius: '8px',
-                textAlign: 'center'
-              }}>
-                {item.time}
-              </div>
-              <div style={{ flex: 1, fontWeight: '500' }}>{item.task}</div>
-              <Trash2 
-                size={18} 
-                className="text-red-500" 
-                style={{ cursor: 'pointer', opacity: 0.6 }} 
-                onClick={() => deleteActivity(item.id)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      <TimePickerModal 
+        isOpen={showTimePicker} 
+        onClose={() => setShowTimePicker(false)}
+        onSelect={(time) => { setCurrentTime(time); setShowTimePicker(false); }}
+      />
     </div>
   );
 };
