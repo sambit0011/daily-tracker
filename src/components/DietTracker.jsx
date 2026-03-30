@@ -106,6 +106,10 @@ const DietTracker = ({ data, setData }) => {
     showNotification(`Added ${amount}ml water`);
   };
 
+  const PROTEIN_TARGET = 140;
+  const WATER_TARGET_ML = 5000;
+  const CALORIE_TARGET = 2500;
+
   return (
     <div className="diet-tracker-view animate-in">
       {showToast && <div className="toast-notification">{toastMsg}</div>}
@@ -122,17 +126,33 @@ const DietTracker = ({ data, setData }) => {
       <div className="glass-card" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', marginBottom: '24px', padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>Logged Calories</div>
-            <div style={{ fontSize: '32px', fontWeight: '800' }}>{Math.round(dailyTotals.calories)} <span style={{ fontSize: '14px', fontWeight: '400', opacity: 0.6 }}>kcal</span></div>
+            <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>Calories</div>
+            <div style={{ fontSize: '32px', fontWeight: '800' }}>{Math.round(dailyTotals.calories)} <span style={{ fontSize: '14px', fontWeight: '400', opacity: 0.6 }}>/ {CALORIE_TARGET} kcal</span></div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '12px', opacity: 0.6 }}>P: {Math.round(dailyTotals.protein)}g</div>
-            <div style={{ fontSize: '12px', opacity: 0.6 }}>C: {Math.round(dailyTotals.carbs)}g</div>
-            <div style={{ fontSize: '12px', opacity: 0.6 }}>F: {Math.round(dailyTotals.fat)}g</div>
+            <div style={{ fontSize: '12px', opacity: 0.8, color: 'var(--accent-green)', fontWeight: '600' }}>Protein: {Math.round(dailyTotals.protein)}g / {PROTEIN_TARGET}g</div>
+            <div style={{ fontSize: '10px', opacity: 0.5 }}>C: {Math.round(dailyTotals.carbs)}g | F: {Math.round(dailyTotals.fat)}g</div>
           </div>
         </div>
-        <div className="progress-bar" style={{ height: '8px', background: 'rgba(255,255,255,0.05)' }}>
-          <div className="progress-fill" style={{ width: `${Math.min(100, (dailyTotals.calories / 2500) * 100)}%`, background: 'var(--accent-green)' }}></div>
+        
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px', opacity: 0.6 }}>
+             <span>Energy Intake</span>
+             <span>{Math.round((dailyTotals.calories / CALORIE_TARGET) * 100)}%</span>
+          </div>
+          <div className="progress-bar" style={{ height: '8px', background: 'rgba(255,255,255,0.05)', marginTop: 0 }}>
+            <div className="progress-fill" style={{ width: `${Math.min(100, (dailyTotals.calories / CALORIE_TARGET) * 100)}%`, background: 'var(--accent-green)' }}></div>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px', opacity: 0.6 }}>
+             <span>Protein Goal</span>
+             <span>{Math.round((dailyTotals.protein / PROTEIN_TARGET) * 100)}%</span>
+          </div>
+          <div className="progress-bar" style={{ height: '8px', background: 'rgba(255,255,255,0.05)', marginTop: 0 }}>
+            <div className="progress-fill" style={{ width: `${Math.min(100, (dailyTotals.protein / PROTEIN_TARGET) * 100)}%`, background: 'var(--accent-purple)' }}></div>
+          </div>
         </div>
       </div>
 
@@ -144,11 +164,14 @@ const DietTracker = ({ data, setData }) => {
               <GlassWater size={20} style={{ color: 'var(--accent-blue)' }} />
               <span style={{ fontWeight: '600' }}>Hydration</span>
             </div>
-            <span style={{ fontSize: '14px', fontWeight: '700' }}>{Math.round(data.water * 250)}ml</span>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '14px', fontWeight: '700' }}>{Math.round(data.water * 250)}</span>
+              <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '2px' }}>/ {WATER_TARGET_ML}ml</span>
+            </div>
           </div>
           
           <div className="progress-bar" style={{ height: '6px', marginBottom: '16px', background: 'rgba(255,255,255,0.05)' }}>
-            <div className="progress-fill" style={{ width: `${Math.min(100, (data.water / 12) * 100)}%`, background: 'var(--accent-blue)' }}></div>
+            <div className="progress-fill" style={{ width: `${Math.min(100, ((data.water * 250) / WATER_TARGET_ML) * 100)}%`, background: 'var(--accent-blue)' }}></div>
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>

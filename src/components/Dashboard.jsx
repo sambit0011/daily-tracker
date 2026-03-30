@@ -3,6 +3,9 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 
 import { Activity, Flame, Droplets, Moon } from 'lucide-react';
 
 const Dashboard = ({ data }) => {
+  const loggedMeals = data.meals || [];
+  const dailyProtein = loggedMeals.reduce((acc, meal) => acc + (parseFloat(meal.protein) || 0), 0);
+
   const chartData = [
     { name: 'Mon', steps: 4000 },
     { name: 'Tue', steps: 3000 },
@@ -15,10 +18,12 @@ const Dashboard = ({ data }) => {
 
   const stats = [
     { label: 'Steps', value: data.steps, goal: 10000, icon: <Activity className="text-blue-500" />, color: 'var(--accent-blue)' },
-    { label: 'Calories', value: data.calories, goal: 2500, icon: <Flame className="text-orange-500" />, color: 'var(--accent-orange)' },
-    { label: 'Water', value: data.water, goal: 8, icon: <Droplets className="text-cyan-500" />, color: 'var(--accent-blue)' },
+    { label: 'Calories', value: Math.round(data.calories), goal: 2500, icon: <Flame className="text-orange-500" />, color: 'var(--accent-orange)' },
+    { label: 'Protein', value: Math.round(dailyProtein), goal: 140, icon: <Activity className="text-purple-500" />, color: 'var(--accent-purple)' },
+    { label: 'Water', value: data.water, goal: 20, icon: <Droplets className="text-cyan-500" />, color: 'var(--accent-blue)' },
     { label: 'Sleep', value: data.sleep, goal: 8, icon: <Moon className="text-purple-500" />, color: 'var(--accent-purple)' },
   ];
+
 
   return (
     <div className="dashboard-view">
