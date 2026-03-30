@@ -2,9 +2,12 @@ import React from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { Activity, Flame, Droplets, Moon } from 'lucide-react';
 
-const Dashboard = ({ data }) => {
+const Dashboard = ({ data, selectedDate }) => {
   const loggedMeals = data.meals || [];
   const dailyProtein = loggedMeals.reduce((acc, meal) => acc + (parseFloat(meal.protein) || 0), 0);
+  const dailyCalories = loggedMeals.reduce((acc, meal) => acc + (parseFloat(meal.calories) || 0), 0);
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
   const chartData = [
     { name: 'Mon', steps: 4000 },
@@ -18,7 +21,7 @@ const Dashboard = ({ data }) => {
 
   const stats = [
     { label: 'Steps', value: data.steps, goal: 10000, icon: <Activity className="text-blue-500" />, color: 'var(--accent-blue)' },
-    { label: 'Calories', value: Math.round(data.calories), goal: 2500, icon: <Flame className="text-orange-500" />, color: 'var(--accent-orange)' },
+    { label: 'Calories', value: Math.round(dailyCalories), goal: 2500, icon: <Flame className="text-orange-500" />, color: 'var(--accent-orange)' },
     { label: 'Protein', value: Math.round(dailyProtein), goal: 140, icon: <Activity className="text-purple-500" />, color: 'var(--accent-purple)' },
     { label: 'Water', value: data.water, goal: 20, icon: <Droplets className="text-cyan-500" />, color: 'var(--accent-blue)' },
     { label: 'Sleep', value: data.sleep, goal: 8, icon: <Moon className="text-purple-500" />, color: 'var(--accent-purple)' },
@@ -26,9 +29,11 @@ const Dashboard = ({ data }) => {
 
 
   return (
-    <div className="dashboard-view">
-      <h1>Dashboard</h1>
-      <p className="subtitle">Hello, here's your daily summary</p>
+    <div className="dashboard-view animate-in">
+      <h1 style={{ marginBottom: '4px' }}>Overview</h1>
+      <p className="subtitle" style={{ marginBottom: '24px' }}>
+        {isToday ? "Today's summary" : `${new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} summary`}
+      </p>
 
       <div className="stat-grid">
         {stats.map((stat, i) => (

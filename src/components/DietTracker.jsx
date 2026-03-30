@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Coffee, GlassWater, Utensils, Flame, Trash2, Check, Clock, ChevronRight, Info, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Coffee, GlassWater, Utensils, Trash2, Clock, ChevronRight, X, Calendar } from 'lucide-react';
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const currentDay = days[new Date().getDay()];
 
-const DietTracker = ({ data, setData }) => {
+const DietTracker = ({ data, setData, globalData, selectedDate, setSelectedDate }) => {
   const [showLogMeal, setShowLogMeal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [logMode, setLogMode] = useState('plan'); // 'plan' or 'manual'
   const [selectedPlanMeal, setSelectedPlanMeal] = useState(null);
   
+  // Day of week for the selected date
+  const selectedDayName = days[new Date(selectedDate).getDay()];
+
   const [manualMeal, setManualMeal] = useState({
     name: '',
     calories: '',
@@ -28,7 +31,7 @@ const DietTracker = ({ data, setData }) => {
   };
 
   const loggedMeals = data.meals || [];
-  const plannedMeals = (data.dietRoutines && data.dietRoutines[currentDay]) || [];
+  const plannedMeals = (globalData.dietRoutines && globalData.dietRoutines[selectedDayName]) || [];
 
   const dailyTotals = loggedMeals.reduce((acc, meal) => ({
     calories: acc.calories + (parseFloat(meal.calories) || 0),
@@ -60,8 +63,7 @@ const DietTracker = ({ data, setData }) => {
     
     setData(prev => ({
       ...prev,
-      meals: [...(prev.meals || []), newMeal],
-      calories: prev.calories + (parseFloat(meal.calories) || 0) // Keep top-level calories in sync
+      meals: [...(prev.meals || []), newMeal]
     }));
     
     setShowLogMeal(false);
@@ -89,19 +91,15 @@ const DietTracker = ({ data, setData }) => {
     setManualMeal({ name: '', calories: '', protein: '', carbs: '', fat: '', type: 'Breakfast' });
   };
 
-  const deleteLoggedMeal = (id, calories) => {
+  const deleteLoggedMeal = (id) => {
     setData(prev => ({
       ...prev,
-      meals: (prev.meals || []).filter(m => m.id !== id),
-      calories: Math.max(0, prev.calories - (parseFloat(calories) || 0))
+      meals: (prev.meals || []).filter(m => m.id !== id)
     }));
     showNotification('Log entry removed');
   };
 
   const addWater = (amount) => {
-    // Assuming data.water stores cups (1 unit = 250ml)
-    // We'll update it by increments. If using ml, we can divide by 250 for backward compatibility if needed, 
-    // but better to just use units. Let's use units of 1 cup = 250ml.
     setData(prev => ({ ...prev, water: prev.water + (amount / 250) }));
     showNotification(`Added ${amount}ml water`);
   };
@@ -110,17 +108,32 @@ const DietTracker = ({ data, setData }) => {
   const WATER_TARGET_ML = 5000;
   const CALORIE_TARGET = 2500;
 
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+
   return (
     <div className="diet-tracker-view animate-in">
       {showToast && <div className="toast-notification">{toastMsg}</div>}
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <h1>Daily Log</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{currentDay}, {new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-        </div>
+      <div 
+        onClick={() => setShowDatePicker(true)}
+        style={{ 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          marginBottom: '8px',
+          cursor: 'pointer',
+          padding: '4px 8px',
+          borderRadius: '8px',
+          background: 'rgba(255,255,255,0.05)'
+        }}
+      >
+        <Calendar size={18} style={{ color: 'var(--accent-blue)' }} />
+        <h1 style={{ margin: 0, fontSize: '24px' }}>
+          {isToday ? 'Today' : new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+        </h1>
+        <ChevronRight size={18} style={{ opacity: 0.3, transform: 'rotate(90deg)' }} />
       </div>
-      <p className="subtitle">Track your actual intake</p>
+      <p className="subtitle" style={{ marginLeft: '4px' }}>{selectedDayName}, {new Date(selectedDate).toLocaleDateString([], { year: 'numeric' })}</p>
 
       {/* Daily Progress Overview */}
       <div className="glass-card" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', marginBottom: '24px', padding: '20px' }}>
@@ -191,11 +204,11 @@ const DietTracker = ({ data, setData }) => {
 
       {/* Logged History */}
       <div style={{ marginTop: '32px' }}>
-        <h3 style={{ marginBottom: '16px', fontSize: '16px' }}>Logged Today</h3>
+        <h3 style={{ marginBottom: '16px', fontSize: '16px' }}>Logged on {isToday ? 'Today' : selectedDate}</h3>
         {loggedMeals.length === 0 ? (
           <div className="glass-card" style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.5 }}>
             <Utensils size={40} style={{ margin: '0 auto 12px auto', opacity: 0.2 }} />
-            <p>No meals logged yet for today.</p>
+            <p>No meals logged yet for {isToday ? 'today' : 'this day'}.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -215,13 +228,56 @@ const DietTracker = ({ data, setData }) => {
                     <div style={{ fontSize: '16px', fontWeight: '700' }}>{Math.round(meal.calories)}</div>
                     <div style={{ fontSize: '10px', opacity: 0.5 }}>kcal</div>
                   </div>
-                  <Trash2 size={16} style={{ opacity: 0.3, cursor: 'pointer' }} onClick={() => deleteLoggedMeal(meal.id, meal.calories)} />
+                  <Trash2 size={16} style={{ opacity: 0.3, cursor: 'pointer' }} onClick={() => deleteLoggedMeal(meal.id)} />
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Date Picker Overlay */}
+      {showDatePicker && (
+        <>
+          <div className="bottom-sheet-backdrop" onClick={() => setShowDatePicker(false)}></div>
+          <div className="bottom-sheet">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0 }}>Select Date</h3>
+              <X onClick={() => setShowDatePicker(false)} style={{ opacity: 0.5 }} />
+            </div>
+            <div style={{ marginBottom: '24px' }}>
+              <input 
+                type="date" 
+                value={selectedDate} 
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setShowDatePicker(false);
+                }} 
+                style={{ 
+                  width: '100%', 
+                  padding: '16px', 
+                  borderRadius: '16px', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid var(--card-border)',
+                  color: 'white',
+                  fontSize: '16px'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+               <button 
+                onClick={() => {
+                  setSelectedDate(new Date().toISOString().split('T')[0]);
+                  setShowDatePicker(false);
+                }}
+                style={{ background: 'rgba(255,255,255,0.05)', fontSize: '14px' }}
+               >
+                 Reset to Today
+               </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Log Meal Overlay */}
       {showLogMeal && (
@@ -252,8 +308,7 @@ const DietTracker = ({ data, setData }) => {
               <div>
                 {plannedMeals.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '30px 0', opacity: 0.5 }}>
-                    <p>No meals planned for {currentDay}.</p>
-                    <button onClick={() => setShowLogMeal(false)} style={{ background: 'rgba(255,255,255,0.05)', fontSize: '12px', marginTop: '12px' }}>Go to Diet Chart</button>
+                    <p>No meals planned for {selectedDayName}.</p>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
@@ -340,4 +395,3 @@ const DietTracker = ({ data, setData }) => {
 };
 
 export default DietTracker;
-

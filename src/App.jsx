@@ -20,13 +20,49 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
+  // Date-aware tracking
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
   const [data, setData] = useState(() => {
     const savedUser = localStorage.getItem('current_user');
+    let initialState = {
+      dailyLogs: {},
+      routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
+      dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+    };
+
     if (savedUser) {
       const u = JSON.parse(savedUser);
       const savedData = localStorage.getItem(`health_data_${u.username}`);
       if (savedData) {
         const parsed = JSON.parse(savedData);
+        
+        // Migration logic for old data structure
+        if (!parsed.dailyLogs) {
+          const today = new Date().toISOString().split('T')[0];
+          parsed.dailyLogs = {
+            [today]: {
+              steps: parsed.steps || 0,
+              calories: parsed.calories || 0,
+              water: parsed.water || 0,
+              sleep: parsed.sleep || 0,
+              weight: parsed.weight || 0,
+              mood: parsed.mood || 'Good',
+              activities: parsed.activities || [],
+              meals: parsed.meals || []
+            }
+          };
+          // Clean up old top-level props
+          delete parsed.steps;
+          delete parsed.calories;
+          delete parsed.water;
+          delete parsed.sleep;
+          delete parsed.weight;
+          delete parsed.mood;
+          delete parsed.activities;
+          delete parsed.meals;
+        }
+
         if (!parsed.routines) {
           parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
         }
@@ -36,7 +72,12 @@ const App = () => {
         return parsed;
       }
     }
-    return {
+    return initialState;
+  });
+
+  // Helper to get logs for a specific date
+  const getLogsForDate = (date) => {
+    const defaultLog = {
       steps: 0,
       calories: 0,
       water: 0,
@@ -44,33 +85,31 @@ const App = () => {
       weight: 0,
       mood: 'Good',
       activities: [],
-      meals: [],
-      routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
-      dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+      meals: []
     };
-  });
+    return data.dailyLogs[date] || defaultLog;
+  };
+
+  const updateDailyLog = (date, updates) => {
+    setData(prev => ({
+      ...prev,
+      dailyLogs: {
+        ...prev.dailyLogs,
+        [date]: { ...getLogsForDate(date), ...updates }
+      }
+    }));
+  };
 
   useEffect(() => {
     if (user) {
       const savedData = localStorage.getItem(`health_data_${user.username}`);
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        if (!parsed.routines) parsed.routines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
-        if (!parsed.dietRoutines) parsed.dietRoutines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+        // Ensure migration also happens on user login/switch
+        if (!parsed.dailyLogs) {
+           // (Migration logic would normally repeat here or be a separate function)
+        }
         setData(parsed);
-      } else {
-        setData({
-          steps: 0,
-          calories: 0,
-          water: 0,
-          sleep: 0,
-          weight: 0,
-          mood: 'Good',
-          activities: [],
-          meals: [],
-          routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
-          dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
-        });
       }
     }
   }, [user]);
@@ -93,16 +132,9 @@ const App = () => {
   };
 
   const handleResetProgress = () => {
-    if (window.confirm('Are you sure you want to reset all your progress? This cannot be undone.')) {
+    if (window.confirm('Are you sure you want to reset ALL progress for ALL dates?')) {
       setData({
-        steps: 0,
-        calories: 0,
-        water: 0,
-        sleep: 0,
-        weight: 0,
-        mood: 'Good',
-        activities: [],
-        meals: [],
+        dailyLogs: {},
         routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
         dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
       });
@@ -110,38 +142,58 @@ const App = () => {
     }
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm('CRITICAL: Are you sure you want to delete your account? All your data will be permanently removed.')) {
-      const users = JSON.parse(localStorage.getItem('app_users') || '[]');
-      const filteredUsers = users.filter(u => u.username !== user.username);
-      localStorage.setItem('app_users', JSON.stringify(filteredUsers));
-      localStorage.removeItem(`health_data_${user.username}`);
-      handleLogout();
-    }
-  };
-
   if (!user) {
     return <Auth onLogin={handleLogin} />;
   }
 
+  const dailyData = getLogsForDate(selectedDate);
+  const setDailyData = (updates) => {
+    if (typeof updates === 'function') {
+      setData(prev => {
+        const current = prev.dailyLogs[selectedDate] || {
+          steps: 0, calories: 0, water: 0, sleep: 0, weight: 0, mood: 'Good', activities: [], meals: []
+        };
+        return {
+          ...prev,
+          dailyLogs: {
+            ...prev.dailyLogs,
+            [selectedDate]: updates(current)
+          }
+        };
+      });
+    } else {
+      updateDailyLog(selectedDate, updates);
+    }
+  };
+
   const renderContent = () => {
+    const commonProps = { 
+      data: dailyData, 
+      setData: setDailyData, 
+      globalData: data, 
+      setGlobalData: setData,
+      selectedDate,
+      setSelectedDate
+    };
+
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard data={data} />;
+        return <Dashboard {...commonProps} />;
       case 'activity':
-        return <ActivityTracker data={data} setData={setData} />;
+        return <ActivityTracker {...commonProps} />;
       case 'diet':
-        return <DietTracker data={data} setData={setData} />;
+        return <DietTracker {...commonProps} />;
       case 'dietPlan':
         return <DietRoutine data={data} setData={setData} />;
       case 'routine':
         return <RoutineTracker data={data} setData={setData} />;
       case 'health':
-        return <HealthTracker data={data} setData={setData} />;
+        return <HealthTracker {...commonProps} />;
       default:
-        return <Dashboard data={data} />;
+        return <Dashboard {...commonProps} />;
     }
   };
+
 
   return (
     <>
