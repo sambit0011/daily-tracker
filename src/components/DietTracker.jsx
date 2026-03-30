@@ -291,23 +291,33 @@ const DietTracker = ({ data, setData, globalData, selectedDate, setSelectedDate 
 
               <div style={{ marginTop: '16px' }}>
                 <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '4px', marginBottom: '8px', display: 'block' }}>Pick a custom date:</label>
-                <input 
-                  type="date" 
-                  value={selectedDate} 
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setShowDatePicker(false);
-                  }} 
-                  style={{ 
-                    width: '100%', 
-                    padding: '16px', 
-                    borderRadius: '16px', 
-                    background: 'rgba(255,255,255,0.05)', 
-                    border: '1px solid var(--card-border)',
-                    color: 'white',
-                    fontSize: '16px'
-                  }}
-                />
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <input 
+                    type="date" 
+                    value={selectedDate} 
+                    onChange={(e) => setSelectedDate(e.target.value)} 
+                    style={{ 
+                      flex: 1, 
+                      padding: '16px', 
+                      borderRadius: '16px', 
+                      background: 'rgba(255,255,255,0.05)', 
+                      border: '1px solid var(--card-border)',
+                      color: 'white',
+                      fontSize: '16px'
+                    }}
+                  />
+                  <button 
+                    onClick={() => setShowDatePicker(false)}
+                    style={{ 
+                      background: 'var(--accent-blue)', 
+                      padding: '0 20px',
+                      borderRadius: '16px',
+                      fontWeight: '700'
+                    }}
+                  >
+                    Set
+                  </button>
+                </div>
               </div>
             </div>
           </div>
