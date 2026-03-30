@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils, Flame, Info } from 'lucide-react';
+import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils, Flame, Info, Calendar } from 'lucide-react';
 import TimePicker from './TimePicker';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -16,9 +16,18 @@ const DietRoutine = ({ data, setData }) => {
   const [selectedMealForIngredients, setSelectedMealForIngredients] = useState(null);
   const [newIngredient, setNewIngredient] = useState({ name: '', protein: 0, carbs: 0, fat: 0 });
 
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
   const routines = data.routines || {};
   const dietRoutines = data.dietRoutines || {
     Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: []
+  };
+
+  const showNotification = (msg) => {
+    setToastMsg(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   // Automatically fetch time from routine when meal type changes
@@ -56,9 +65,11 @@ const DietRoutine = ({ data, setData }) => {
         m.id === editingId ? { ...m, time: currentTime, meal: newMeal, type: newMealType } : m
       );
       setEditingId(null);
+      showNotification('Meal updated');
     } else {
       const mealEntry = { time: currentTime, meal: newMeal, type: newMealType, id: Date.now() };
       updatedDayDiet = [...(dietRoutines[selectedDay] || []), mealEntry];
+      showNotification('Meal added to plan');
     }
     
     updatedDayDiet = sortDiet(updatedDayDiet);
@@ -92,13 +103,13 @@ const DietRoutine = ({ data, setData }) => {
       dietRoutines: { ...(prev.dietRoutines || {}), [selectedDay]: updatedDayDiet }
     }));
     if (editingId === id) cancelEdit();
+    showNotification('Meal removed');
   };
 
   const copyFromDay = (fromDay) => {
     const sourceDiet = dietRoutines[fromDay];
     if (!sourceDiet || sourceDiet.length === 0) {
-      alert("Source day has no diet plan to copy!");
-      setShowCopySelector(false);
+      showNotification(`${fromDay} has no plan to copy`);
       return;
     }
 
@@ -110,6 +121,18 @@ const DietRoutine = ({ data, setData }) => {
       }
     }));
     setShowCopySelector(false);
+    showNotification(`Copied from ${fromDay}`);
+  };
+
+  const clearDay = () => {
+    if (window.confirm(`Are you sure you want to clear ${selectedDay}'s diet plan?`)) {
+      setData(prev => ({
+        ...prev,
+        dietRoutines: { ...(prev.dietRoutines || {}), [selectedDay]: [] }
+      }));
+      setShowCopySelector(false);
+      showNotification('Plan cleared');
+    }
   };
 
   const calculateMacros = (ingredients = []) => {
@@ -160,32 +183,86 @@ const DietRoutine = ({ data, setData }) => {
   const activeMeal = selectedMealForIngredients ? currentDiet.find(m => m.id === selectedMealForIngredients.id) : null;
   const mealMacros = activeMeal ? calculateMacros(activeMeal.ingredients) : { protein: 0, carbs: 0, fat: 0, calories: 0 };
 
+  const dailyMacros = currentDiet.reduce((acc, meal) => {
+    const macros = calculateMacros(meal.ingredients);
+    return {
+      protein: acc.protein + macros.protein,
+      carbs: acc.carbs + macros.carbs,
+      fat: acc.fat + macros.fat,
+      calories: acc.calories + macros.calories
+    };
+  }, { protein: 0, carbs: 0, fat: 0, calories: 0 });
+
   return (
     <div className="diet-routine-view animate-in">
+      {showToast && <div className="toast-notification">{toastMsg}</div>}
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <h1>Diet Plan</h1>
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowCopySelector(!showCopySelector)} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px' }}>
-            Copy options <ChevronDown size={14} />
-          </button>
-          {showCopySelector && (
-            <div className="animate-in" style={{ position: 'absolute', top: '45px', right: 0, zIndex: 100, width: '200px', padding: '16px', background: '#1c1c1e', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Copy diet from:</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {days.filter(d => d !== selectedDay).map(day => (
-                  <button key={day} onClick={() => copyFromDay(day)} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 8px', fontSize: '11px', flex: '1 0 30%' }}>{day}</button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <button onClick={() => setShowCopySelector(true)} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px' }}>
+          <Copy size={14} /> Copy options
+        </button>
       </div>
       <p className="subtitle">Your weekly nutrition chart</p>
+
+      {showCopySelector && (
+        <>
+          <div className="bottom-sheet-backdrop" onClick={() => setShowCopySelector(false)}></div>
+          <div className="bottom-sheet">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Copy Diet Plan</h3>
+              <X onClick={() => setShowCopySelector(false)} style={{ opacity: 0.5 }} />
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Select source day to copy diet from to {selectedDay}:</p>
+            <div className="copy-day-grid">
+              {days.filter(d => d !== selectedDay).map(day => (
+                <button key={day} onClick={() => copyFromDay(day)} className="copy-day-btn">
+                  <Calendar size={20} />
+                  <span>{day}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={clearDay} style={{ width: '100%', marginTop: '24px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <Trash2 size={18} /> Clear {selectedDay}'s Plan
+            </button>
+          </div>
+        </>
+      )}
 
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '8px' }}>
         {days.map(day => (
           <button key={day} onClick={() => { setSelectedDay(day); cancelEdit(); }} style={{ background: selectedDay === day ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '12px', fontSize: '14px', whiteSpace: 'nowrap' }}>{day}</button>
         ))}
+      </div>
+
+      <div className="glass-card" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '24px', padding: '16px 20px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.05em' }}>Daily Nutritional Summary ({selectedDay})</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '12px', opacity: 0.6, marginBottom: '2px' }}>Total Calories</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Flame size={20} style={{ color: 'var(--accent-orange)' }} /> {Math.round(dailyMacros.calories)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '16px', textAlign: 'right' }}>
+            <div>
+              <div style={{ fontSize: '10px', opacity: 0.5 }}>Protein</div>
+              <div style={{ fontSize: '14px', fontWeight: '700' }}>{Math.round(dailyMacros.protein)}g</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', opacity: 0.5 }}>Carbs</div>
+              <div style={{ fontSize: '14px', fontWeight: '700' }}>{Math.round(dailyMacros.carbs)}g</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', opacity: 0.5 }}>Fats</div>
+              <div style={{ fontSize: '14px', fontWeight: '700' }}>{Math.round(dailyMacros.fat)}g</div>
+            </div>
+          </div>
+        </div>
+        <div className="progress-bar" style={{ marginTop: '16px', height: '6px', background: 'rgba(255,255,255,0.03)' }}>
+          <div className="progress-fill" style={{ width: `${Math.min(100, (dailyMacros.calories / 2500) * 100)}%`, background: 'var(--accent-blue)', height: '100%' }}></div>
+        </div>
+        <div style={{ fontSize: '10px', opacity: 0.4, marginTop: '8px', textAlign: 'right' }}>Target: 2500 kcal</div>
       </div>
 
       <div className="glass-card" style={{ padding: '24px', border: editingId ? '1px solid var(--accent-orange)' : '1px solid var(--card-border)' }}>
@@ -307,24 +384,24 @@ const DietRoutine = ({ data, setData }) => {
                </div>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <h4 style={{ marginBottom: '16px', fontSize: '14px' }}>Add Ingredient</h4>
+            <div style={{ marginBottom: '24px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: '1px solid var(--card-border)' }}>
+              <h4 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: '600' }}>Add Ingredient</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <input type="text" placeholder="e.g. Oats, Egg, Protein Powder" value={newIngredient.name} onChange={(e) => setNewIngredient({...newIngredient, name: e.target.value})} />
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '12px' }}>P (g)</label>
-                    <input type="number" placeholder="P" value={newIngredient.protein} onChange={(e) => setNewIngredient({...newIngredient, protein: e.target.value})} style={{ padding: '8px 12px' }} />
+                <input type="text" placeholder="Ingredient name (e.g. Oats)" value={newIngredient.name} onChange={(e) => setNewIngredient({...newIngredient, name: e.target.value})} style={{ background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr) 50px', gap: '8px', alignItems: 'flex-end' }}>
+                  <div>
+                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px', marginBottom: '4px', display: 'block' }}>P (g)</label>
+                    <input type="number" placeholder="0" value={newIngredient.protein} onChange={(e) => setNewIngredient({...newIngredient, protein: e.target.value})} style={{ padding: '10px', fontSize: '14px', textAlign: 'center' }} />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '12px' }}>C (g)</label>
-                    <input type="number" placeholder="C" value={newIngredient.carbs} onChange={(e) => setNewIngredient({...newIngredient, carbs: e.target.value})} style={{ padding: '8px 12px' }} />
+                  <div>
+                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px', marginBottom: '4px', display: 'block' }}>C (g)</label>
+                    <input type="number" placeholder="0" value={newIngredient.carbs} onChange={(e) => setNewIngredient({...newIngredient, carbs: e.target.value})} style={{ padding: '10px', fontSize: '14px', textAlign: 'center' }} />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '12px' }}>F (g)</label>
-                    <input type="number" placeholder="F" value={newIngredient.fat} onChange={(e) => setNewIngredient({...newIngredient, fat: e.target.value})} style={{ padding: '8px 12px' }} />
+                  <div>
+                    <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px', marginBottom: '4px', display: 'block' }}>F (g)</label>
+                    <input type="number" placeholder="0" value={newIngredient.fat} onChange={(e) => setNewIngredient({...newIngredient, fat: e.target.value})} style={{ padding: '10px', fontSize: '14px', textAlign: 'center' }} />
                   </div>
-                  <button onClick={addIngredient} style={{ flex: 1.5, background: 'var(--accent-orange)', padding: '0', alignSelf: 'flex-end', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={addIngredient} style={{ background: 'var(--accent-orange)', padding: '0', height: '42px', width: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Plus size={20} />
                   </button>
                 </div>
@@ -332,21 +409,28 @@ const DietRoutine = ({ data, setData }) => {
             </div>
 
             <div>
-              <h4 style={{ marginBottom: '16px', fontSize: '14px' }}>Ingredients ({activeMeal?.ingredients?.length || 0})</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h4 style={{ margin: 0, fontSize: '14px' }}>Ingredients ({activeMeal?.ingredients?.length || 0})</h4>
+                {activeMeal?.ingredients?.length > 0 && (
+                  <span style={{ fontSize: '10px', opacity: 0.4 }}>Swipe to delete</span>
+                )}
+              </div>
               {(activeMeal?.ingredients || []).length === 0 ? (
-                <div style={{ textAlign: 'center', opacity: 0.3, padding: '40px 0' }}>
+                <div style={{ textAlign: 'center', opacity: 0.2, padding: '30px 0', border: '1px dashed var(--card-border)', borderRadius: '24px' }}>
                   <Utensils size={32} style={{ margin: '0 auto 8px auto' }} />
-                  <p fontSize="12px">No ingredients added yet</p>
+                  <p style={{ fontSize: '12px' }}>No ingredients added yet</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {activeMeal.ingredients.map(ing => (
-                    <div key={ing.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={ing.id} className="animate-in" style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '600' }}>{ing.name}</div>
                         <div style={{ fontSize: '10px', opacity: 0.5 }}>P: {ing.protein}g | C: {ing.carbs}g | F: {ing.fat}g • {Math.round(parseFloat(ing.protein)*4 + parseFloat(ing.carbs)*4 + parseFloat(ing.fat)*9)} kcal</div>
                       </div>
-                      <Trash2 size={14} style={{ opacity: 0.4, cursor: 'pointer' }} onClick={() => deleteIngredient(ing.id)} />
+                      <div onClick={() => deleteIngredient(ing.id)} style={{ padding: '8px', cursor: 'pointer', opacity: 0.3 }}>
+                        <Trash2 size={14} className="text-red-500" />
+                      </div>
                     </div>
                   ))}
                 </div>

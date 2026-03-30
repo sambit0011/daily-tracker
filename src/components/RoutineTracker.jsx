@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check } from 'lucide-react';
+import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Calendar } from 'lucide-react';
 import TimePicker from './TimePicker';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -12,8 +12,17 @@ const RoutineTracker = ({ data, setData }) => {
   const [showCopySelector, setShowCopySelector] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
   const routines = data.routines || {
     Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: []
+  };
+
+  const showNotification = (msg) => {
+    setToastMsg(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   const sortRoutine = (routine) => {
@@ -39,9 +48,11 @@ const RoutineTracker = ({ data, setData }) => {
         a.id === editingId ? { ...a, time: currentTime, task: newTask } : a
       );
       setEditingId(null);
+      showNotification('Activity updated');
     } else {
       const newActivity = { time: currentTime, task: newTask, id: Date.now() };
       updatedDayRoutine = [...(routines[selectedDay] || []), newActivity];
+      showNotification('Activity added');
     }
     
     updatedDayRoutine = sortRoutine(updatedDayRoutine);
@@ -74,13 +85,13 @@ const RoutineTracker = ({ data, setData }) => {
       routines: { ...(prev.routines || {}), [selectedDay]: updatedDayRoutine }
     }));
     if (editingId === id) cancelEdit();
+    showNotification('Activity removed');
   };
 
   const copyFromDay = (fromDay) => {
     const sourceRoutine = routines[fromDay];
     if (!sourceRoutine || sourceRoutine.length === 0) {
-      alert("Source day has no routine to copy!");
-      setShowCopySelector(false);
+      showNotification(`${fromDay} has no routine to copy`);
       return;
     }
 
@@ -92,31 +103,57 @@ const RoutineTracker = ({ data, setData }) => {
       }
     }));
     setShowCopySelector(false);
+    showNotification(`Copied from ${fromDay}`);
+  };
+
+  const clearDay = () => {
+    if (window.confirm(`Are you sure you want to clear ${selectedDay}'s schedule?`)) {
+      setData(prev => ({
+        ...prev,
+        routines: { ...(prev.routines || {}), [selectedDay]: [] }
+      }));
+      setShowCopySelector(false);
+      showNotification('Schedule cleared');
+    }
   };
 
   const currentRoutine = sortRoutine(routines[selectedDay] || []);
 
   return (
     <div className="routine-view animate-in">
+      {showToast && <div className="toast-notification">{toastMsg}</div>}
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <h1>Routine</h1>
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowCopySelector(!showCopySelector)} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px' }}>
-            Copy options <ChevronDown size={14} />
-          </button>
-          {showCopySelector && (
-            <div className="animate-in" style={{ position: 'absolute', top: '45px', right: 0, zIndex: 100, width: '200px', padding: '16px', background: '#1c1c1e', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Copy routine from:</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {days.filter(d => d !== selectedDay).map(day => (
-                  <button key={day} onClick={() => copyFromDay(day)} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 8px', fontSize: '11px', flex: '1 0 30%' }}>{day}</button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <button onClick={() => setShowCopySelector(true)} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px' }}>
+          <Copy size={14} /> Copy options
+        </button>
       </div>
       <p className="subtitle">Design your weekly flow</p>
+
+      {showCopySelector && (
+        <>
+          <div className="bottom-sheet-backdrop" onClick={() => setShowCopySelector(false)}></div>
+          <div className="bottom-sheet">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Copy Routine</h3>
+              <X onClick={() => setShowCopySelector(false)} style={{ opacity: 0.5 }} />
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Select source day to copy routine from to {selectedDay}:</p>
+            <div className="copy-day-grid">
+              {days.filter(d => d !== selectedDay).map(day => (
+                <button key={day} onClick={() => copyFromDay(day)} className="copy-day-btn">
+                  <Calendar size={20} />
+                  <span>{day}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={clearDay} style={{ width: '100%', marginTop: '24px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <Trash2 size={18} /> Clear {selectedDay}'s Schedule
+            </button>
+          </div>
+        </>
+      )}
 
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '8px' }}>
         {days.map(day => (

@@ -317,3 +317,94 @@ input:focus {
   width: 20px;
   height: 20px;
 }
+/* Premium Overlays */
+.bottom-sheet-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3000;
+  animation: fadeIn 0.3s ease;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-color);
+  border-top: 1px solid var(--card-border);
+  border-radius: 32px 32px 0 0;
+  padding: 32px 24px 48px 24px;
+  z-index: 3001;
+  max-width: 480px;
+  margin: 0 auto;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  animation: slideUpBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpBottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-in-up {
+  animation: slideUpBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.copy-day-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.copy-day-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.copy-day-btn:active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  transform: scale(0.95);
+}
+
+.copy-day-btn.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+.toast-notification {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-green);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  z-index: 5000;
+  animation: toastFadeIn 0.3s ease, toastFadeOut 0.3s ease 2.7s forwards;
+}
+
+@keyframes toastFadeIn {
+  from { opacity: 0; transform: translate(-50%, -20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes toastFadeOut {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -20px); }
+}
