@@ -15,6 +15,7 @@ const DietRoutine = ({ data, setData }) => {
   const [editingId, setEditingId] = useState(null);
   const [selectedMealForIngredients, setSelectedMealForIngredients] = useState(null);
   const [newIngredient, setNewIngredient] = useState({ name: '', protein: 0, carbs: 0, fat: 0 });
+  const [editingIngredientId, setEditingIngredientId] = useState(null);
 
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -149,13 +150,35 @@ const DietRoutine = ({ data, setData }) => {
     }, { protein: 0, carbs: 0, fat: 0, calories: 0 });
   };
 
+  const startEditIngredient = (ing) => {
+    setEditingIngredientId(ing.id);
+    setNewIngredient({
+      name: ing.name,
+      protein: ing.protein,
+      carbs: ing.carbs,
+      fat: ing.fat
+    });
+  };
+
+  const cancelEditIngredient = () => {
+    setEditingIngredientId(null);
+    setNewIngredient({ name: '', protein: 0, carbs: 0, fat: 0 });
+  };
+
   const addIngredient = () => {
     if (!newIngredient.name) return;
     setData(prev => {
       const currentDietRoutines = prev.dietRoutines || { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
       const updatedDayDiet = currentDietRoutines[selectedDay].map(m => {
         if (m.id === selectedMealForIngredients.id) {
-          const ingredients = [...(m.ingredients || []), { ...newIngredient, id: Date.now() }];
+          let ingredients;
+          if (editingIngredientId) {
+            ingredients = (m.ingredients || []).map(i => 
+              i.id === editingIngredientId ? { ...newIngredient, id: i.id } : i
+            );
+          } else {
+            ingredients = [...(m.ingredients || []), { ...newIngredient, id: Date.now() }];
+          }
           return { ...m, ingredients };
         }
         return m;
@@ -163,6 +186,8 @@ const DietRoutine = ({ data, setData }) => {
       return { ...prev, dietRoutines: { ...currentDietRoutines, [selectedDay]: updatedDayDiet } };
     });
     setNewIngredient({ name: '', protein: 0, carbs: 0, fat: 0 });
+    setEditingIngredientId(null);
+    if (editingIngredientId) showNotification('Ingredient updated');
   };
 
   const deleteIngredient = (ingredientId) => {
@@ -177,7 +202,9 @@ const DietRoutine = ({ data, setData }) => {
       });
       return { ...prev, dietRoutines: { ...currentDietRoutines, [selectedDay]: updatedDayDiet } };
     });
+    if (editingIngredientId === ingredientId) cancelEditIngredient();
   };
+
 
   const currentDiet = sortDiet(dietRoutines[selectedDay] || []);
   const activeMeal = selectedMealForIngredients ? currentDiet.find(m => m.id === selectedMealForIngredients.id) : null;
@@ -384,8 +411,8 @@ const DietRoutine = ({ data, setData }) => {
                </div>
             </div>
 
-            <div style={{ marginBottom: '24px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: '1px solid var(--card-border)' }}>
-              <h4 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: '600' }}>Add Ingredient</h4>
+            <div style={{ marginBottom: '24px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: editingIngredientId ? '1px solid var(--accent-orange)' : '1px solid var(--card-border)' }}>
+              <h4 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: '600' }}>{editingIngredientId ? 'Edit Ingredient' : 'Add Ingredient'}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <input type="text" placeholder="Ingredient name (e.g. Oats)" value={newIngredient.name} onChange={(e) => setNewIngredient({...newIngredient, name: e.target.value})} style={{ background: 'rgba(255,255,255,0.05)' }} />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr) 50px', gap: '8px', alignItems: 'flex-end' }}>
@@ -401,10 +428,17 @@ const DietRoutine = ({ data, setData }) => {
                     <label style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px', marginBottom: '4px', display: 'block' }}>F (g)</label>
                     <input type="number" placeholder="0" value={newIngredient.fat} onChange={(e) => setNewIngredient({...newIngredient, fat: e.target.value})} style={{ padding: '10px', fontSize: '14px', textAlign: 'center' }} />
                   </div>
-                  <button onClick={addIngredient} style={{ background: 'var(--accent-orange)', padding: '0', height: '42px', width: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Plus size={20} />
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button onClick={addIngredient} style={{ background: 'var(--accent-orange)', padding: '0', height: '42px', width: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {editingIngredientId ? <Check size={20} /> : <Plus size={20} />}
+                    </button>
+                  </div>
                 </div>
+                {editingIngredientId && (
+                  <button onClick={cancelEditIngredient} style={{ background: 'rgba(255,255,255,0.05)', fontSize: '12px', padding: '8px' }}>
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             </div>
 
@@ -412,7 +446,7 @@ const DietRoutine = ({ data, setData }) => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h4 style={{ margin: 0, fontSize: '14px' }}>Ingredients ({activeMeal?.ingredients?.length || 0})</h4>
                 {activeMeal?.ingredients?.length > 0 && (
-                  <span style={{ fontSize: '10px', opacity: 0.4 }}>Swipe to delete</span>
+                  <span style={{ fontSize: '10px', opacity: 0.4 }}>Tap edit or trash to manage</span>
                 )}
               </div>
               {(activeMeal?.ingredients || []).length === 0 ? (
@@ -423,19 +457,25 @@ const DietRoutine = ({ data, setData }) => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {activeMeal.ingredients.map(ing => (
-                    <div key={ing.id} className="animate-in" style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div key={ing.id} className="animate-in" style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: editingIngredientId === ing.id ? '1px solid var(--accent-orange)' : '1px solid rgba(255,255,255,0.05)' }}>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '600' }}>{ing.name}</div>
                         <div style={{ fontSize: '10px', opacity: 0.5 }}>P: {ing.protein}g | C: {ing.carbs}g | F: {ing.fat}g • {Math.round(parseFloat(ing.protein)*4 + parseFloat(ing.carbs)*4 + parseFloat(ing.fat)*9)} kcal</div>
                       </div>
-                      <div onClick={() => deleteIngredient(ing.id)} style={{ padding: '8px', cursor: 'pointer', opacity: 0.3 }}>
-                        <Trash2 size={14} className="text-red-500" />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div onClick={() => startEditIngredient(ing)} style={{ padding: '8px', cursor: 'pointer', opacity: 0.3 }}>
+                          <Edit2 size={14} style={{ color: 'var(--accent-orange)' }} />
+                        </div>
+                        <div onClick={() => deleteIngredient(ing.id)} style={{ padding: '8px', cursor: 'pointer', opacity: 0.3 }}>
+                          <Trash2 size={14} className="text-red-500" />
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
           </div>
         </div>
       )}
