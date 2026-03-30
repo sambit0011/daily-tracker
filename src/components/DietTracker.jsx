@@ -116,24 +116,32 @@ const DietTracker = ({ data, setData, globalData, selectedDate, setSelectedDate 
       
       <div 
         onClick={() => setShowDatePicker(true)}
+        className="clickable-header"
         style={{ 
           display: 'inline-flex', 
           alignItems: 'center', 
-          gap: '8px', 
-          marginBottom: '8px',
+          gap: '12px', 
+          marginBottom: '4px',
           cursor: 'pointer',
-          padding: '4px 8px',
-          borderRadius: '8px',
-          background: 'rgba(255,255,255,0.05)'
+          padding: '8px 16px',
+          borderRadius: '16px',
+          background: 'rgba(59, 130, 246, 0.1)',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          transition: 'all 0.2s ease'
         }}
       >
-        <Calendar size={18} style={{ color: 'var(--accent-blue)' }} />
-        <h1 style={{ margin: 0, fontSize: '24px' }}>
-          {isToday ? 'Today' : new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-        </h1>
-        <ChevronRight size={18} style={{ opacity: 0.3, transform: 'rotate(90deg)' }} />
+        <div style={{ background: 'var(--accent-blue)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Calendar size={18} style={{ color: 'white' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--accent-blue)', marginBottom: '-2px', letterSpacing: '0.05em' }}>Viewing Log For</div>
+          <h1 style={{ margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {isToday ? 'Today' : new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+            <ChevronRight size={16} style={{ opacity: 0.5, transform: 'rotate(90deg)' }} />
+          </h1>
+        </div>
       </div>
-      <p className="subtitle" style={{ marginLeft: '4px' }}>{selectedDayName}, {new Date(selectedDate).toLocaleDateString([], { year: 'numeric' })}</p>
+      <p className="subtitle" style={{ marginLeft: '4px', fontSize: '12px', opacity: 0.5 }}>{selectedDayName}, {new Date(selectedDate).toLocaleDateString([], { year: 'numeric' })}</p>
 
       {/* Daily Progress Overview */}
       <div className="glass-card" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', marginBottom: '24px', padding: '20px' }}>
