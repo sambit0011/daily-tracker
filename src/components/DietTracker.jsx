@@ -253,35 +253,62 @@ const DietTracker = ({ data, setData, globalData, selectedDate, setSelectedDate 
               <h3 style={{ margin: 0 }}>Select Date</h3>
               <X onClick={() => setShowDatePicker(false)} style={{ opacity: 0.5 }} />
             </div>
-            <div style={{ marginBottom: '24px' }}>
-              <input 
-                type="date" 
-                value={selectedDate} 
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  setShowDatePicker(false);
-                }} 
-                style={{ 
-                  width: '100%', 
-                  padding: '16px', 
-                  borderRadius: '16px', 
-                  background: 'rgba(255,255,255,0.05)', 
-                  border: '1px solid var(--card-border)',
-                  color: 'white',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-               <button 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              <button 
                 onClick={() => {
-                  setSelectedDate(new Date().toISOString().split('T')[0]);
+                  const today = new Date();
+                  setSelectedDate(today.toISOString().split('T')[0]);
                   setShowDatePicker(false);
                 }}
-                style={{ background: 'rgba(255,255,255,0.05)', fontSize: '14px' }}
-               >
-                 Reset to Today
-               </button>
+                style={{ 
+                  background: isToday ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  padding: '16px' 
+                }}
+              >
+                <span>Today</span>
+                <span style={{ opacity: 0.5 }}>{new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  const yesterday = new Date();
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  setSelectedDate(yesterday.toISOString().split('T')[0]);
+                  setShowDatePicker(false);
+                }}
+                style={{ 
+                  background: selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  padding: '16px' 
+                }}
+              >
+                <span>Yesterday</span>
+                <span style={{ opacity: 0.5 }}>{new Date(Date.now() - 86400000).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+              </button>
+
+              <div style={{ marginTop: '16px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '4px', marginBottom: '8px', display: 'block' }}>Pick a custom date:</label>
+                <input 
+                  type="date" 
+                  value={selectedDate} 
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setShowDatePicker(false);
+                  }} 
+                  style={{ 
+                    width: '100%', 
+                    padding: '16px', 
+                    borderRadius: '16px', 
+                    background: 'rgba(255,255,255,0.05)', 
+                    border: '1px solid var(--card-border)',
+                    color: 'white',
+                    fontSize: '16px'
+                  }}
+                />
+              </div>
             </div>
           </div>
         </>

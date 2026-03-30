@@ -462,13 +462,36 @@ const DietRoutine = ({ data, setData }) => {
                         <div style={{ fontSize: '14px', fontWeight: '600' }}>{ing.name}</div>
                         <div style={{ fontSize: '10px', opacity: 0.5 }}>P: {ing.protein}g | C: {ing.carbs}g | F: {ing.fat}g • {Math.round(parseFloat(ing.protein)*4 + parseFloat(ing.carbs)*4 + parseFloat(ing.fat)*9)} kcal</div>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <div onClick={() => startEditIngredient(ing)} style={{ padding: '8px', cursor: 'pointer', opacity: 0.3 }}>
-                          <Edit2 size={14} style={{ color: 'var(--accent-orange)' }} />
-                        </div>
-                        <div onClick={() => deleteIngredient(ing.id)} style={{ padding: '8px', cursor: 'pointer', opacity: 0.3 }}>
-                          <Trash2 size={14} className="text-red-500" />
-                        </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button 
+                          onClick={() => startEditIngredient(ing)} 
+                          style={{ 
+                            padding: '8px 12px', 
+                            background: 'rgba(255, 114, 94, 0.1)', 
+                            color: 'var(--accent-orange)',
+                            border: '1px solid rgba(255, 114, 94, 0.2)',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          <Edit2 size={12} /> Edit
+                        </button>
+                        <button 
+                          onClick={() => deleteIngredient(ing.id)} 
+                          style={{ 
+                            padding: '8px', 
+                            background: 'rgba(239, 68, 68, 0.1)', 
+                            color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.1)',
+                            borderRadius: '10px'
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   ))}
