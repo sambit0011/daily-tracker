@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils, Flame, Info, Calendar } from 'lucide-react';
+import { Plus, Trash2, Copy, Clock, X, ChevronDown, Edit2, Check, Utensils, Flame, Info, Calendar, Search } from 'lucide-react';
 import TimePicker from './TimePicker';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -16,6 +16,9 @@ const DietRoutine = ({ data, setData }) => {
   const [selectedMealForIngredients, setSelectedMealForIngredients] = useState(null);
   const [newIngredient, setNewIngredient] = useState({ name: '', protein: 0, carbs: 0, fat: 0 });
   const [editingIngredientId, setEditingIngredientId] = useState(null);
+  const [showMealLibrary, setShowMealLibrary] = useState(false);
+  const [searchLibrary, setSearchLibrary] = useState('');
+  const [pendingIngredients, setPendingIngredients] = useState([]);
 
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -29,6 +32,46 @@ const DietRoutine = ({ data, setData }) => {
     setToastMsg(msg);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const saveMealToLibrary = (mealName, type, ingredients = []) => {
+    if (!mealName) return;
+    
+    setData(prev => {
+      const library = prev.mealLibrary || [];
+      const cleanedMealName = mealName.trim();
+      const existingIndex = library.findIndex(m => m.name.toLowerCase() === cleanedMealName.toLowerCase());
+      
+      const mealData = {
+        name: cleanedMealName,
+        type: type,
+        ingredients: ingredients
+      };
+
+      let newLibrary;
+      if (existingIndex >= 0) {
+        // Only update if it has ingredients, or if the library one is empty
+        const existingMeal = library[existingIndex];
+        if (ingredients.length > 0 || !existingMeal.ingredients || existingMeal.ingredients.length === 0) {
+          newLibrary = [...library];
+          newLibrary[existingIndex] = mealData;
+        } else {
+          newLibrary = library;
+        }
+      } else {
+        newLibrary = [...library, mealData];
+      }
+      
+      return { ...prev, mealLibrary: newLibrary };
+    });
+  };
+
+  const selectMealFromLibrary = (meal) => {
+    setNewMeal(meal.name);
+    setNewMealType(meal.type);
+    setPendingIngredients(meal.ingredients || []);
+    setShowMealLibrary(false);
+    showNotification(`Selected ${meal.name} from library`);
   };
 
   // Automatically fetch time from routine when meal type changes
@@ -65,11 +108,23 @@ const DietRoutine = ({ data, setData }) => {
       updatedDayDiet = dietRoutines[selectedDay].map(m => 
         m.id === editingId ? { ...m, time: currentTime, meal: newMeal, type: newMealType } : m
       );
+      
+      // Update library with new meal name/type/ingredients
+      const updatedMeal = updatedDayDiet.find(m => m.id === editingId);
+      saveMealToLibrary(newMeal, newMealType, updatedMeal.ingredients || []);
+      
       setEditingId(null);
       showNotification('Meal updated');
     } else {
-      const mealEntry = { time: currentTime, meal: newMeal, type: newMealType, id: Date.now() };
+      const mealEntry = { 
+        time: currentTime, 
+        meal: newMeal, 
+        type: newMealType, 
+        id: Date.now(),
+        ingredients: [...pendingIngredients]
+      };
       updatedDayDiet = [...(dietRoutines[selectedDay] || []), mealEntry];
+      saveMealToLibrary(newMeal, newMealType, [...pendingIngredients]);
       showNotification('Meal added to plan');
     }
     
@@ -80,6 +135,7 @@ const DietRoutine = ({ data, setData }) => {
       dietRoutines: { ...(prev.dietRoutines || {}), [selectedDay]: updatedDayDiet }
     }));
     setNewMeal('');
+    setPendingIngredients([]);
     setCurrentTime('08:00 AM');
   };
 
@@ -185,6 +241,19 @@ const DietRoutine = ({ data, setData }) => {
       });
       return { ...prev, dietRoutines: { ...currentDietRoutines, [selectedDay]: updatedDayDiet } };
     });
+
+    // Update library
+    if (activeMeal) {
+      const currentIngredients = activeMeal.ingredients || [];
+      let nextIngredients;
+      if (editingIngredientId) {
+        nextIngredients = currentIngredients.map(i => i.id === editingIngredientId ? { ...newIngredient, id: i.id } : i);
+      } else {
+        nextIngredients = [...currentIngredients, { ...newIngredient, id: Date.now() }];
+      }
+      saveMealToLibrary(activeMeal.meal, activeMeal.type, nextIngredients);
+    }
+
     setNewIngredient({ name: '', protein: 0, carbs: 0, fat: 0 });
     setEditingIngredientId(null);
     if (editingIngredientId) showNotification('Ingredient updated');
@@ -202,6 +271,13 @@ const DietRoutine = ({ data, setData }) => {
       });
       return { ...prev, dietRoutines: { ...currentDietRoutines, [selectedDay]: updatedDayDiet } };
     });
+
+    // Update library
+    if (activeMeal) {
+      const nextIngredients = (activeMeal.ingredients || []).filter(i => i.id !== ingredientId);
+      saveMealToLibrary(activeMeal.meal, activeMeal.type, nextIngredients);
+    }
+
     if (editingIngredientId === ingredientId) cancelEditIngredient();
   };
 
@@ -311,13 +387,129 @@ const DietRoutine = ({ data, setData }) => {
             </select>
           </div>
 
-          <input 
-            type="text" 
-            placeholder="What's on the menu?" 
-            value={newMeal} 
-            onChange={(e) => setNewMeal(e.target.value)} 
-            style={{ padding: '15px' }} 
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input 
+              type="text" 
+              placeholder="What's on the menu?" 
+              value={newMeal} 
+              onChange={(e) => {
+                setNewMeal(e.target.value);
+                if (e.target.value.length > 0) setShowMealLibrary(true);
+              }} 
+              onFocus={() => {
+                if (data.mealLibrary && data.mealLibrary.length > 0) setShowMealLibrary(true);
+              }}
+              style={{ padding: '15px', paddingRight: '45px', flex: 1 }} 
+            />
+            <div 
+              className="search-icon-btn"
+              onClick={() => setShowMealLibrary(!showMealLibrary)}
+              style={{ 
+                position: 'absolute', 
+                right: '12px', 
+                cursor: 'pointer', 
+                opacity: 0.6, 
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                background: showMealLibrary ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Search size={18} style={{ color: showMealLibrary ? 'var(--accent-blue)' : 'white' }} />
+            </div>
+            
+            {showMealLibrary && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowMealLibrary(false)}></div>
+                <div className="glass-card animate-in" style={{ 
+                  position: 'absolute', 
+                  top: '100%', 
+                  left: 0, 
+                  right: 0, 
+                  zIndex: 100, 
+                  marginTop: '8px', 
+                  padding: '8px',
+                  maxHeight: '250px',
+                  overflowY: 'auto',
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+                  backdropFilter: 'blur(20px)'
+                }}>
+                  <div style={{ fontSize: '10px', opacity: 0.5, padding: '8px 12px', textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.05em' }}>
+                    {data.mealLibrary && data.mealLibrary.length > 0 ? 'Saved Meals Library' : 'Library is empty'}
+                  </div>
+                  
+                  {data.mealLibrary && data.mealLibrary.length > 0 ? (
+                    data.mealLibrary
+                      .filter(m => m.name.toLowerCase().includes(newMeal.toLowerCase()))
+                      .map((m, idx) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => selectMealFromLibrary(m)}
+                          style={{ 
+                            padding: '12px 16px', 
+                            borderRadius: '12px', 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '4px',
+                            transition: 'all 0.2s ease',
+                            background: 'rgba(255,255,255,0.02)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                            e.currentTarget.style.transform = 'translateX(4px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                            e.currentTarget.style.transform = 'translateX(0)';
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '600' }}>{m.name}</div>
+                            <div style={{ fontSize: '10px', opacity: 0.5 }}>{m.type} • {m.ingredients?.length || 0} ingredients</div>
+                          </div>
+                          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '6px' }}>
+                            <Plus size={14} style={{ opacity: 0.4 }} />
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+                      <Utensils size={32} style={{ margin: '0 auto 12px auto', opacity: 0.1 }} />
+                      <p style={{ fontSize: '12px', opacity: 0.5 }}>Save a meal on any day to see it here later.</p>
+                    </div>
+                  )}
+
+                  {data.mealLibrary && data.mealLibrary.length > 0 && data.mealLibrary.filter(m => m.name.toLowerCase().includes(newMeal.toLowerCase())).length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', opacity: 0.5 }}>
+                      No matching saved meals found
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          
+          {pendingIngredients.length > 0 && !editingId && (
+            <div style={{ padding: '12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '600' }}>
+                <Check size={14} style={{ display: 'inline', marginRight: '4px' }} /> 
+                {pendingIngredients.length} ingredients will be copied
+              </div>
+              <button 
+                onClick={() => setPendingIngredients([])} 
+                style={{ background: 'transparent', padding: '4px', color: '#ef4444', fontSize: '10px' }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>

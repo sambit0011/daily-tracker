@@ -28,7 +28,8 @@ const App = () => {
     let initialState = {
       dailyLogs: {},
       routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
-      dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+      dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
+      mealLibrary: []
     };
 
     if (savedUser) {
@@ -68,6 +69,9 @@ const App = () => {
         }
         if (!parsed.dietRoutines) {
           parsed.dietRoutines = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
+        }
+        if (!parsed.mealLibrary) {
+          parsed.mealLibrary = [];
         }
         return parsed;
       }
@@ -136,7 +140,8 @@ const App = () => {
       setData({
         dailyLogs: {},
         routines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
-        dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
+        dietRoutines: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] },
+        mealLibrary: []
       });
       setIsMenuOpen(false);
     }
