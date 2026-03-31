@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Activity, Utensils, Heart, LogOut, Menu, X, 
-  User as UserIcon, HelpCircle, Info, Mail, RotateCcw, Trash2, Calendar, ClipboardList
+  User as UserIcon, HelpCircle, Info, Mail, RotateCcw, Trash2, Calendar, ClipboardList, ChevronLeft
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ActivityTracker from './components/ActivityTracker';
@@ -278,17 +278,35 @@ const App = () => {
         alignItems: 'center', 
         padding: '24px 20px 0 20px',
       }}>
-        <button 
-          onClick={() => setIsMenuOpen(true)}
-          style={{ 
-            background: 'rgba(255,255,255,0.05)', 
-            padding: '10px', 
-            borderRadius: '12px',
-            color: 'white'
-          }}
-        >
-          <Menu size={20} />
-        </button>
+        {activeTab === 'dashboard' ? (
+          <button 
+            onClick={() => setIsMenuOpen(true)}
+            style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              padding: '10px', 
+              borderRadius: '12px',
+              color: 'white'
+            }}
+          >
+            <Menu size={20} />
+          </button>
+        ) : (
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              padding: '10px 14px 10px 8px', 
+              borderRadius: '12px',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <ChevronLeft size={20} />
+            <span style={{ fontSize: '14px', fontWeight: '600' }}>Back</span>
+          </button>
+        )}
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)' }}></div>

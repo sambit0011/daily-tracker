@@ -8,6 +8,7 @@ const mealTypes = ['Preworkout', 'Breakfast', 'Lunch', 'Snacks', 'Dinner'];
 const DietRoutine = ({ data, setData }) => {
   const [selectedDay, setSelectedDay] = useState(days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [creationMode, setCreationMode] = useState('custom'); // 'custom' or 'library'
   const [currentTime, setCurrentTime] = useState('08:00 AM');
   const [newMeal, setNewMeal] = useState('');
   const [newMealType, setNewMealType] = useState('Breakfast');
@@ -71,6 +72,7 @@ const DietRoutine = ({ data, setData }) => {
     setNewMealType(meal.type);
     setPendingIngredients(meal.ingredients || []);
     setShowMealLibrary(false);
+    setCreationMode('custom'); // Return to custom view to see the result
     showNotification(`Selected ${meal.name} from library`);
   };
 
@@ -137,6 +139,7 @@ const DietRoutine = ({ data, setData }) => {
     setNewMeal('');
     setPendingIngredients([]);
     setCurrentTime('08:00 AM');
+    setCreationMode('custom'); // Clear the view
   };
 
   const startEdit = (entry) => {
