@@ -371,7 +371,40 @@ const DietRoutine = ({ data, setData }) => {
       <div className="glass-card" style={{ padding: '24px', border: editingId ? '1px solid var(--accent-orange)' : '1px solid var(--card-border)' }}>
         <h3 style={{ marginBottom: '20px', fontSize: '16px' }}>{editingId ? 'Edit Meal' : `Plan ${selectedDay}'s meals`}</h3>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+        {!editingId && (
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', padding: '4px', marginBottom: '24px' }}>
+            <button 
+              onClick={() => { setCreationMode('custom'); setNewMeal(''); }}
+              style={{ 
+                flex: 1, 
+                padding: '10px', 
+                borderRadius: '11px', 
+                fontSize: '13px',
+                background: creationMode === 'custom' ? 'var(--accent-blue)' : 'transparent',
+                color: creationMode === 'custom' ? 'white' : 'var(--text-secondary)',
+                boxShadow: creationMode === 'custom' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
+              }}
+            >
+              New Meal
+            </button>
+            <button 
+              onClick={() => { setCreationMode('library'); setNewMeal(''); }}
+              style={{ 
+                flex: 1, 
+                padding: '10px', 
+                borderRadius: '11px', 
+                fontSize: '13px',
+                background: creationMode === 'library' ? 'var(--accent-blue)' : 'transparent',
+                color: creationMode === 'library' ? 'white' : 'var(--text-secondary)',
+                boxShadow: creationMode === 'library' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
+              }}
+            >
+              From Library
+            </button>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '12px' }}>
             <div onClick={() => setShowTimePicker(true)} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', border: '1px solid var(--card-border)' }}>
               <Clock size={16} style={{ color: 'var(--accent-orange)', marginBottom: '4px' }} />
@@ -387,115 +420,78 @@ const DietRoutine = ({ data, setData }) => {
             </select>
           </div>
 
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <input 
-              type="text" 
-              placeholder="What's on the menu?" 
-              value={newMeal} 
-              onChange={(e) => {
-                setNewMeal(e.target.value);
-                if (e.target.value.length > 0) setShowMealLibrary(true);
-              }} 
-              onFocus={() => {
-                if (data.mealLibrary && data.mealLibrary.length > 0) setShowMealLibrary(true);
-              }}
-              style={{ padding: '15px', paddingRight: '45px', flex: 1 }} 
-            />
-            <div 
-              className="search-icon-btn"
-              onClick={() => setShowMealLibrary(!showMealLibrary)}
-              style={{ 
-                position: 'absolute', 
-                right: '12px', 
-                cursor: 'pointer', 
-                opacity: 0.6, 
-                padding: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                background: showMealLibrary ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <Search size={18} style={{ color: showMealLibrary ? 'var(--accent-blue)' : 'white' }} />
+          {creationMode === 'custom' ? (
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input 
+                type="text" 
+                placeholder="What's on the menu?" 
+                value={newMeal} 
+                onChange={(e) => setNewMeal(e.target.value)} 
+                style={{ padding: '15px', flex: 1 }} 
+              />
             </div>
-            
-            {showMealLibrary && (
-              <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowMealLibrary(false)}></div>
-                <div className="glass-card animate-in" style={{ 
-                  position: 'absolute', 
-                  top: '100%', 
-                  left: 0, 
-                  right: 0, 
-                  zIndex: 100, 
-                  marginTop: '8px', 
-                  padding: '8px',
-                  maxHeight: '250px',
-                  overflowY: 'auto',
-                  background: 'var(--card-bg)',
-                  border: '1px solid var(--card-border)',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
-                  backdropFilter: 'blur(20px)'
-                }}>
-                  <div style={{ fontSize: '10px', opacity: 0.5, padding: '8px 12px', textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.05em' }}>
-                    {data.mealLibrary && data.mealLibrary.length > 0 ? 'Saved Meals Library' : 'Library is empty'}
-                  </div>
-                  
-                  {data.mealLibrary && data.mealLibrary.length > 0 ? (
-                    data.mealLibrary
-                      .filter(m => m.name.toLowerCase().includes(newMeal.toLowerCase()))
-                      .map((m, idx) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => selectMealFromLibrary(m)}
-                          style={{ 
-                            padding: '12px 16px', 
-                            borderRadius: '12px', 
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '4px',
-                            transition: 'all 0.2s ease',
-                            background: 'rgba(255,255,255,0.02)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
-                            e.currentTarget.style.transform = 'translateX(4px)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                            e.currentTarget.style.transform = 'translateX(0)';
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontSize: '14px', fontWeight: '600' }}>{m.name}</div>
-                            <div style={{ fontSize: '10px', opacity: 0.5 }}>{m.type} • {m.ingredients?.length || 0} ingredients</div>
-                          </div>
-                          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '6px' }}>
-                            <Plus size={14} style={{ opacity: 0.4 }} />
-                          </div>
-                        </div>
-                      ))
-                  ) : (
-                    <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-                      <Utensils size={32} style={{ margin: '0 auto 12px auto', opacity: 0.1 }} />
-                      <p style={{ fontSize: '12px', opacity: 0.5 }}>Save a meal on any day to see it here later.</p>
-                    </div>
-                  )}
+          ) : (
+            <div className="glass-card animate-in-up" style={{ 
+              background: 'rgba(255,255,255,0.02)', 
+              padding: '12px', 
+              borderRadius: '20px',
+              border: '1px solid var(--card-border)',
+              maxHeight: '280px',
+              overflowY: 'auto',
+              marginBottom: 0
+            }}>
+              <div style={{ position: 'relative', marginBottom: '12px' }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                <input 
+                  type="text" 
+                  placeholder="Search saved meals..." 
+                  value={newMeal}
+                  onChange={(e) => setNewMeal(e.target.value)}
+                  style={{ padding: '10px 10px 10px 36px', fontSize: '14px', background: 'rgba(0,0,0,0.1)', marginTop: 0 }}
+                />
+              </div>
 
-                  {data.mealLibrary && data.mealLibrary.length > 0 && data.mealLibrary.filter(m => m.name.toLowerCase().includes(newMeal.toLowerCase())).length === 0 && (
-                    <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', opacity: 0.5 }}>
-                      No matching saved meals found
+              {data.mealLibrary && data.mealLibrary.length > 0 ? (
+                data.mealLibrary
+                  .filter(m => m.name.toLowerCase().includes(newMeal.toLowerCase()))
+                  .map((m, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => selectMealFromLibrary(m)}
+                      style={{ 
+                        padding: '12px', 
+                        borderRadius: '12px', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '4px',
+                        background: 'rgba(255,255,255,0.03)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                    >
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>{m.name}</div>
+                        <div style={{ fontSize: '10px', opacity: 0.5 }}>{m.type} • {m.ingredients?.length || 0} ingredients</div>
+                      </div>
+                      <Plus size={16} style={{ opacity: 0.3 }} />
                     </div>
-                  )}
+                  ))
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', opacity: 0.5, fontSize: '12px' }}>
+                  No saved meals found.
+                  <br />Save a meal to see it here later.
                 </div>
-              </>
-            )}
-          </div>
-          
+              )}
+              {data.mealLibrary && data.mealLibrary.length > 0 && data.mealLibrary.filter(m => m.name.toLowerCase().includes(newMeal.toLowerCase())).length === 0 && (
+                <div style={{ padding: '20px', textAlign: 'center', fontSize: '12px', opacity: 0.5 }}>
+                  No matching results.
+                </div>
+              )}
+            </div>
+          )}
+
           {pendingIngredients.length > 0 && !editingId && (
             <div style={{ padding: '12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '600' }}>

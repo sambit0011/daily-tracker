@@ -113,6 +113,32 @@ const App = () => {
         if (!parsed.dailyLogs) {
            // (Migration logic would normally repeat here or be a separate function)
         }
+        
+        // One-time migration: Import existing diet routine meals into library
+        if (parsed.dietRoutines) {
+          const library = parsed.mealLibrary || [];
+          let updated = false;
+          const newLibrary = [...library];
+          
+          Object.values(parsed.dietRoutines).forEach(dayMeals => {
+            dayMeals.forEach(m => {
+              const exists = newLibrary.find(lm => lm.name.toLowerCase() === m.meal.trim().toLowerCase());
+              if (!exists && m.meal.trim()) {
+                newLibrary.push({
+                  name: m.meal.trim(),
+                  type: m.type,
+                  ingredients: m.ingredients || []
+                });
+                updated = true;
+              }
+            });
+          });
+          
+          if (updated) {
+            parsed.mealLibrary = newLibrary;
+          }
+        }
+        
         setData(parsed);
       }
     }
