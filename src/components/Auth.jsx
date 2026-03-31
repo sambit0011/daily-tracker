@@ -13,7 +13,20 @@ const Auth = ({ onLogin }) => {
 
   const getUsers = () => {
     const users = localStorage.getItem('app_users');
-    return users ? JSON.parse(users) : [];
+    let parsed = users ? JSON.parse(users) : [];
+    
+    // Auto-migration: Clean existing users (trim and lowercase usernames)
+    const needsMigration = parsed.some(u => u.username !== u.username.trim().toLowerCase() || u.password !== u.password.trim());
+    if (needsMigration) {
+      parsed = parsed.map(u => ({
+        ...u,
+        username: u.username.trim().toLowerCase(),
+        password: u.password.trim()
+      }));
+      localStorage.setItem('app_users', JSON.stringify(parsed));
+    }
+    
+    return parsed;
   };
 
   const handleSignup = (e) => {
@@ -26,12 +39,15 @@ const Auth = ({ onLogin }) => {
     }
 
     const users = getUsers();
-    if (users.find(u => u.username === username)) {
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (users.find(u => u.username === cleanUsername)) {
       setError('Username not available');
       return;
     }
 
-    const newUser = { username, password, mobile };
+    const newUser = { username: cleanUsername, password: cleanPassword, mobile: mobile.trim() };
     localStorage.setItem('app_users', JSON.stringify([...users, newUser]));
     
     // Switch to login after successful signup
@@ -48,7 +64,13 @@ const Auth = ({ onLogin }) => {
     setError('');
 
     const users = getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    const user = users.find(u => 
+      u.username === cleanUsername && 
+      u.password === cleanPassword
+    );
 
     if (user) {
       onLogin(user);
