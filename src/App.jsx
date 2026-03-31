@@ -147,6 +147,16 @@ const App = () => {
     }
   };
 
+  const handleDeleteAccount = () => {
+    if (window.confirm('Are you sure you want to delete your account? This action is permanent.')) {
+      const users = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const newUsers = users.filter(u => u.username !== user.username);
+      localStorage.setItem('app_users', JSON.stringify(newUsers));
+      localStorage.removeItem(`health_data_${user.username}`);
+      handleLogout();
+    }
+  };
+
   if (!user) {
     return <Auth onLogin={handleLogin} />;
   }
